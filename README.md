@@ -1,5 +1,10 @@
 # HEAMS: Holistic Evaluation of Agent Memory Systems
 
+[![Tests](https://github.com/milatechtransfer/heams/actions/workflows/test.yml/badge.svg)](https://github.com/milatechtransfer/heams/actions/workflows/test.yml)
+[![Check](https://github.com/milatechtransfer/heams/actions/workflows/check.yml/badge.svg)](https://github.com/milatechtransfer/heams/actions/workflows/check.yml)
+[![Docs](https://github.com/milatechtransfer/heams/actions/workflows/docs.yml/badge.svg)](https://milatechtransfer.github.io/heams/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 HEAMS is an open framework for evaluating memory systems for
 AI agents. It measures both what memory adds to an agent (recalling, updating,
 and reusing information over long interactions) and what it risks for the user
