@@ -7,7 +7,7 @@ and reusing information over long interactions) and what it risks for the user
 systems, and benchmarks are declared in YAML, so comparing memory systems is a
 matter of listing more experiments in a run config.
 
-Documentation: <https://milatechtransfer.github.io/mozilla-memory/>
+Documentation: <https://milatechtransfer.github.io/heams/>
 
 ## What's included
 
@@ -55,7 +55,7 @@ Documentation: <https://milatechtransfer.github.io/mozilla-memory/>
 ## Install
 
 ```sh
-git clone https://github.com/milatechtransfer/mozilla-memory.git
+git clone https://github.com/milatechtransfer/heams.git
 cd mozilla-memory
 make setup
 cp .env_template .env   # then fill in OPENAI_API_KEY (and HF_TOKEN)
@@ -140,7 +140,7 @@ Naghshzan, and Arsène Fansi Tchango.
 **Contributors:** Marzia Nouri (Contextual Integrity and Retention policy
 benchmarks) and Mehar Bhatia (STALE and Erasability & Editability benchmarks).
 See the
-[contributors page](https://github.com/milatechtransfer/mozilla-memory/graphs/contributors)
+[contributors page](https://github.com/milatechtransfer/heams/graphs/contributors)
 for everyone who has contributed code.
 
 ## Acknowledgements
@@ -154,6 +154,6 @@ work.
 ## Contact
 
 For questions, bug reports, and research collaborations, please open an
-[issue on GitHub](https://github.com/milatechtransfer/mozilla-memory/issues).
+[issue on GitHub](https://github.com/milatechtransfer/heams/issues).
 To contribute code, a benchmark, or a memory system, see
 [CONTRIBUTING.md](CONTRIBUTING.md).

@@ -345,7 +345,7 @@ through `bash -lc` because tools such as `uv` are often only on a login
 shell's `PATH`.
 
 ```sh
-ssh -S "$SOCKET" <cluster> "bash -lc 'git clone https://github.com/milatechtransfer/mozilla-memory.git \$SCRATCH/mozilla-memory-browse && cd \$SCRATCH/mozilla-memory-browse/python_package && uv sync --python 3.12'"
+ssh -S "$SOCKET" <cluster> "bash -lc 'git clone https://github.com/milatechtransfer/heams.git \$SCRATCH/mozilla-memory-browse && cd \$SCRATCH/mozilla-memory-browse/python_package && uv sync --python 3.12'"
 ```
 
 To update it later (the checkout is dedicated to the dashboard, so it can
