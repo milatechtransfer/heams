@@ -72,8 +72,8 @@ On the cluster, clone the repository and create the untracked `.env`
 file in that checkout.
 
 ```sh
-git clone <repository-url> ~/mozilla-memory
-cd ~/mozilla-memory
+git clone <repository-url> ~/heams
+cd ~/heams
 cp .env_template .env
 $EDITOR .env
 
@@ -104,15 +104,15 @@ submitting jobs.
 ## Submit a campaign
 
 ```sh
-cd /path/to/mozilla-memory/python_package
-PARTITION=my-partition cluster/submit_campaign.sh cluster/campaigns/smoke_campaign.sh /scratch/$USER/mozilla-memory
+cd /path/to/heams/python_package
+PARTITION=my-partition cluster/submit_campaign.sh cluster/campaigns/smoke_campaign.sh /scratch/$USER/heams
 ```
 
 Or use the Make wrapper, which defaults to the `smoke_campaign` campaign
 and an output root of `results/campaigns` (under `python_package/`):
 
 ```sh
-PARTITION=my-partition CAMPAIGN_OUTPUT_DIR=/scratch/$USER/mozilla-memory make launch-campaign
+PARTITION=my-partition CAMPAIGN_OUTPUT_DIR=/scratch/$USER/heams make launch-campaign
 ```
 
 Both the Make target and direct invocations of `submit_campaign.sh` use the
@@ -133,14 +133,14 @@ attempts must use that same command and directory.
 Each job runs:
 
 ```sh
-exec srun uv run --python 3.12 heams run --config configs/runs/<run>.yaml --output-dir /scratch/$USER/mozilla-memory/smoke_campaign_20260727-163603-a1b2c3d4/01_<run-stem>
+exec srun uv run --python 3.12 heams run --config configs/runs/<run>.yaml --output-dir /scratch/$USER/heams/smoke_campaign_20260727-163603-a1b2c3d4/01_<run-stem>
 ```
 
-For example, a campaign submitted to `/scratch/$USER/mozilla-memory`
+For example, a campaign submitted to `/scratch/$USER/heams`
 produces this layout:
 
 ```text
-/scratch/$USER/mozilla-memory/
+/scratch/$USER/heams/
 └── smoke_campaign_20260727-163603-a1b2c3d4/
   ├── 01_smoke_campaign_no_memory/
   │   ├── run_config.20260727-163611-8df325f0.yaml

@@ -5,7 +5,7 @@ benchmarks, new memory systems, and documentation fixes are all welcome.
 
 ## Reporting bugs and asking questions
 
-Open an [issue on GitHub](https://github.com/milatechtransfer/mozilla-memory/issues).
+Open an [issue on GitHub](https://github.com/milatechtransfer/heams/issues).
 For a bug, include:
 
 - the command you ran and the run config it used
