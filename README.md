@@ -101,7 +101,9 @@ Next: [Getting started](python_package/docs/getting-started.md),
 ## Citing
 
 A paper describing the framework is in preparation. Until it is published,
-please cite this repository if you use the framework in your research.
+please cite this repository if you use the framework in your research: use the
+"Cite this repository" button on GitHub, or the metadata in
+[`CITATION.cff`](CITATION.cff).
 
 <!-- Replace the paragraph above with the paper's BibTeX once it is published. -->
 

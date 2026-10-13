@@ -1,0 +1,48 @@
+cff-version: 1.2.0
+message: >-
+  If you use HEAMS in your research, please cite it as below. Please also cite
+  the original paper of each benchmark you report; see
+  python_package/docs/citations.md.
+title: "HEAMS: Holistic Evaluation of Agent Memory Systems"
+type: software
+authors:
+  - given-names: Jacob
+    family-names: Lavoie
+    affiliation: Mila – Quebec AI Institute
+  - given-names: Chirag
+    family-names: Goel
+    affiliation: Mila – Quebec AI Institute
+  - given-names: Jordan
+    family-names: Bannister
+    affiliation: Mila – Quebec AI Institute
+  - given-names: Amirhossein
+    family-names: Naghshzan
+    affiliation: Mila – Quebec AI Institute
+  - given-names: Arsène
+    family-names: Fansi Tchango
+    affiliation: Mila – Quebec AI Institute
+  - given-names: Marzia
+    family-names: Nouri
+    affiliation: Mila – Quebec AI Institute
+  - given-names: Mehar
+    family-names: Bhatia
+    affiliation: Mila – Quebec AI Institute
+version: 1.0.0
+date-released: 2026-10-16
+license: MIT
+repository-code: "https://github.com/milatechtransfer/heams"
+url: "https://milatechtransfer.github.io/heams/"
+abstract: >-
+  HEAMS is an open framework for evaluating memory systems for AI agents. It
+  measures both what memory adds to an agent (recalling, updating, and reusing
+  information over long interactions) and what it risks for the user (leaking,
+  keeping, or failing to forget personal information). Agents, memory systems,
+  and benchmarks are declared in YAML, and memory systems plug in as separate
+  packages.
+keywords:
+  - agent memory
+  - memory systems
+  - benchmark
+  - evaluation
+  - LLM agents
+  - privacy
