@@ -1,0 +1,6 @@
+run_name: milamem_consolidation_on_none_locomo
+experiments:
+  - name: gpt56_luna_milamem_consolidation_on_none_locomo
+    agent_config_file: milamem_ablations/locomo_deterministic.yaml
+    memory_system_config_file: milamem_ablations/consolidation_on_none.yaml
+    benchmark_config_file: milamem_ablations/locomo.yaml

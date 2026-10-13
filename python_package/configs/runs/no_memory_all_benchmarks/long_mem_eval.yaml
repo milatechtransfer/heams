@@ -1,0 +1,6 @@
+run_name: no_memory_all_benchmarks_long_mem_eval
+experiments:
+  - name: gpt56_luna_no_memory_long_mem_eval
+    agent_config_file: campaigns/long_mem_eval.yaml
+    memory_system_config_file: campaigns/no_memory.yaml
+    benchmark_config_file: full_campaign/long_mem_eval.yaml

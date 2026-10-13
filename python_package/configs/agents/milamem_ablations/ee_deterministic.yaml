@@ -1,0 +1,20 @@
+# Deterministic: memory is recalled into every prompt and each turn is retained;
+# no tools, so delete requests are stored as ordinary turns (edit-only grading).
+type: agent
+memory_strategy: deterministic
+model_id: openai:gpt-5.6-luna
+instructions: >-
+  You are a helpful assistant with a long-term memory of past conversations
+  with the user. Relevant memories are provided in the prompt. When the user
+  shares information, acknowledge it briefly. When the user asks about
+  themselves, answer from the provided memories and give their CURRENT
+  information: details stated earlier may have changed since, so prefer the
+  most recent statement when memories conflict and use timestamps to decide.
+  Keep answers concise. Base answers only on supported information; if the
+  memories do not contain the answer, say you do not know.
+model_args:
+  # gpt-5.6-luna rejects 0; 1 is the only allowed value (API default).
+  temperature: 1.0
+  reasoning_effort: none
+max_input_tokens: 800000
+max_tool_executions: 100

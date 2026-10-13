@@ -1,0 +1,133 @@
+[project]
+name = "heams"
+version = "1.0.0"
+license = "MIT"
+requires-python = ">=3.12.6"
+description = "HEAMS: Holistic Evaluation of Agent Memory Systems."
+readme = "README.md"
+dependencies = [
+    "dotenv>=0.9.9",
+    "pandas>=3.0.0",
+    "pydantic>=2.12.5",
+    "pydantic-settings>=2.12.0",
+    "pyyaml>=6.0.3",
+    "mozilla-ai-tinyagent>=0.1.1",
+    # tinyagent 0.1.1 declares mcp>=1.5.0 unbounded but fails to import on mcp 2.x.
+    "mcp>=1.5.0,<2",
+    "any-llm-sdk[ollama]>=1.25.0",
+    "datasets>=3.0.0",
+]
+authors = [
+    { name = "Jacob Lavoie" },
+    { name = "Chirag Goel" },
+    { name = "Jordan Bannister" },
+    { name = "Amirhossein Naghshzan" },
+    { name = "Arsène Fansi Tchango" },
+    { name = "Marzia Nouri" },
+    { name = "Mehar Bhatia" },
+]
+
+[project.scripts]
+heams = "heams.cli.cli:main"
+# Kept so commands and scripts written for the old name keep working.
+mapb = "heams.cli.cli:main"
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project.optional-dependencies]
+mem0 = [
+    "heams-memory-mem0",
+]
+example-plugin = [
+    "heams-memory-example",
+]
+hipporag = [
+    "heams-memory-hipporag",
+]
+letta = [
+    "heams-memory-letta",
+]
+milamem = [
+    "heams-memory-milamem",
+]
+all-memory-plugins = [
+    "heams-memory-mem0",
+    "heams-memory-example",
+    "heams-memory-hipporag",
+    "heams-memory-letta",
+    "heams-memory-milamem",
+]
+
+[dependency-groups]
+dev = [
+    "heams-memory-example",
+    "pytest>=9.0.1",
+    "pytest-dotenv>=0.5.2",
+    "ty>=0.0.67",
+    "zensical>=0.0.43",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"heams.results_browser" = ["static/*.html", "static/css/*.css", "static/js/*.js", "static/js/package.json", "static/js/views/*.js", "static/vendor/*/*.js", "static/vendor/*/*.css", "static/vendor/*/*.woff2", "static/vendor/*/LICENSE"]
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.uv]
+package = true
+# HippoRAG pins exact versions older than this environment's. These relax its pins
+# so the versions everything else already uses win; nothing else changes.
+override-dependencies = [
+    "pydantic>=2.12.5",
+    "transformers>=4.45.2",
+    "tenacity>=8.5.0",
+    "torch>=2.5.1",
+    "networkx>=3.4.2",
+    "tiktoken>=0.7.0",
+    "openai>=2.32.0,<3",
+    # letta 0.16.8 (the letta extra) pins OpenTelemetry, mcp, uvicorn, websockets and
+    # docstring-parser to versions older than this environment's; resolved as pinned they
+    # downgrade the benchmark agent's own dependencies (tinyagent needs OpenTelemetry's
+    # 0.62b0 semantic conventions and mcp). These hold each at the version this environment
+    # already used; memory_plugins/heams_memory_letta/pyproject.toml explains each one.
+    "opentelemetry-api==1.41.0",
+    "opentelemetry-sdk==1.41.0",
+    "opentelemetry-exporter-otlp==1.41.0",
+    "opentelemetry-instrumentation-requests==0.62b0",
+    "opentelemetry-instrumentation-sqlalchemy==0.62b0",
+    "mcp==1.27.0",
+    "uvicorn[standard]==0.44.0",
+    "websockets==17.1",
+    "docstring-parser==0.18.0",
+]
+
+[tool.uv.sources]
+heams-memory-example = { path = "../memory_plugins/heams_memory_example", editable = true }
+heams-memory-mem0 = { path = "../memory_plugins/heams_memory_mem0", editable = true }
+heams-memory-hipporag = { path = "../memory_plugins/heams_memory_hipporag", editable = true }
+heams-memory-letta = { path = "../memory_plugins/heams_memory_letta", editable = true }
+heams-memory-milamem = { path = "../memory_plugins/heams_memory_milamem", editable = true }
+
+[tool.pytest.ini_options]
+env_files = [
+    "../.env",
+]
+pythonpath = ["src"]
+markers = [
+    "integration: marks tests that require live external services",
+    "requires_ollama: marks tests that require a running local Ollama server",
+]
+addopts = [
+    "--color=yes",
+    "--durations=0",
+    "--strict-markers",
+    "--doctest-modules",
+    "--import-mode=importlib",
+]
+log_cli = true
+testpaths = ["tests"]

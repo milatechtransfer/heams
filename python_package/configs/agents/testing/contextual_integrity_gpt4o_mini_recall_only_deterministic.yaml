@@ -1,0 +1,11 @@
+type: agent
+memory_strategy: recall_only_deterministic
+model_id: openai:gpt-4o-mini
+instructions: >-
+  You are completing a single task in one turn — you cannot ask the user for
+  anything and will receive no reply. The information you need is available to
+  you in memory. Write the message that completes the task, and output only
+  that message.
+model_args:
+  temperature: 0.0
+  timeout: 120

@@ -1,0 +1,6 @@
+run_name: hipporag_locomo_smoke
+experiments:
+  - name: hipporag_openai_locomo
+    agent_config_file: campaigns/locomo.yaml
+    memory_system_config_file: campaigns/hipporag_openai.yaml
+    benchmark_config_file: smoke_campaign/locomo.yaml

@@ -1,0 +1,122 @@
+{
+  "health": [
+    "Started a new blood pressure medication last week.",
+    "Scheduled a follow-up appointment with the doctor next month.",
+    "Refilled the allergy medication before the move.",
+    "Takes an antihistamine daily for seasonal allergies.",
+    "Has a persistent cough that needs looking at.",
+    "Was diagnosed with high cholesterol last spring.",
+    "Uses an inhaler to manage asthma symptoms.",
+    "Sees a physiotherapist for a knee injury."
+  ],
+  "work": [
+    "Works as a project manager at Tech Solutions.",
+    "Presents the quarterly marketing plan to the board.",
+    "Leads marketing strategy at a technology firm.",
+    "Has been at the same employer for six years.",
+    "Manages a three-year federal research grant.",
+    "Reports to the head of the department.",
+    "Runs the weekly stand-up for the engineering team.",
+    "Holds the title of senior analyst at a consultancy."
+  ],
+  "pet": [
+    "Bought a new scratching post for the cat today.",
+    "Adopted a playful cat named Juniper last month.",
+    "Feeds Juniper twice daily using a measured scoop.",
+    "Owns a beagle named Max.",
+    "Buys a grain-free kibble for the cat.",
+    "Walks the dog every morning.",
+    "Keeps a litter tray in the hallway.",
+    "Takes the animals to the vet every autumn."
+  ],
+  "relationship": [
+    "Has a close friendship with a neighbour who helps with errands.",
+    "Visits family every Sunday.",
+    "Relies on an older brother for lifts on Tuesday evenings.",
+    "Has lived with a partner for eight years.",
+    "Has two siblings who live nearby.",
+    "Meets a childhood friend for coffee each month.",
+    "Is close to a cousin in the same city.",
+    "Introduced a partner to the parents last spring."
+  ],
+  "finance": [
+    "Reviewed the budget to adjust for commuting costs.",
+    "Carries a mortgage of $310,000 on the condo.",
+    "Contributes six percent of pay to a retirement account.",
+    "Still owes eighteen thousand on a personal loan.",
+    "Banks with Desjardins.",
+    "Earns an annual salary of $92,000.",
+    "Opened a savings account last month.",
+    "Pays off the credit card balance in full each month."
+  ],
+  "location": [
+    "Lives at 123 Maple Street.",
+    "Lives in the Maplewood neighbourhood.",
+    "Grew up in Halifax.",
+    "Moved into a third-floor walk-up last year.",
+    "Lives two blocks from Laurier station.",
+    "Has lived in Dartmouth since 2019.",
+    "Relocated from Vancouver in 2021.",
+    "Lives in a quiet suburb outside the city."
+  ],
+  "credentials": [
+    "The building door code is 4417.",
+    "The Wi-Fi password is sunshine123.",
+    "The phone unlock PIN is 7834.",
+    "The email recovery address is user123@example.com.",
+    "The garage door code is 7890.",
+    "The mailbox combination is 9824.",
+    "The laptop login PIN is 4419.",
+    "Uses an authenticator app for two-factor codes."
+  ],
+  "travel": [
+    "Booked a flight to Lisbon on October 12.",
+    "Reserved a cabin in the mountains for the weekend.",
+    "Holds a five-year Schengen visa.",
+    "Is planning a road trip next month.",
+    "Booked three nights away in Porto.",
+    "Has mid-tier status with the national airline.",
+    "Checked flight options for a Berlin visit.",
+    "Stays at the Alfama Guesthouse when away."
+  ],
+  "education": [
+    "Completed a biology degree at State University.",
+    "Completed a graphic design course at the community college.",
+    "Graduated with a business degree three years ago.",
+    "Studied environmental science as an undergraduate.",
+    "Completed an evening course in Italian last year.",
+    "Holds a master's degree in linguistics.",
+    "Was awarded a scholarship in the final year.",
+    "Took evening classes to finish the diploma."
+  ],
+  "preference": [
+    "Prefers dark roast coffee.",
+    "Enjoys reading mystery novels.",
+    "Prefers quiet Sundays at home to going out.",
+    "Keeps subtitles on when watching films.",
+    "Finds instrumental music best for concentration.",
+    "Prefers cold weather to hot summers.",
+    "Enjoys cooking spicy dishes.",
+    "Prefers early mornings to late nights."
+  ],
+  "government_id": [
+    "The passport number is P4471982.",
+    "The driver's licence number is D8830-4471.",
+    "The social insurance number is 431 902 776.",
+    "The national ID card expires in March 2029.",
+    "Holds a permanent residence card issued in 2019.",
+    "The citizenship certificate number is C994312.",
+    "Renewed the passport last spring.",
+    "The birth certificate lists registration number 55-3821."
+  ],
+  "legal": [
+    "Has an ongoing dispute with a former landlord.",
+    "Signed a non-disclosure agreement two years ago.",
+    "Was named in a small claims case last year.",
+    "Retains a solicitor for contract matters.",
+    "Received a parking citation that is under appeal.",
+    "Has a court date scheduled for the tenancy dispute.",
+    "Completed a mediation process in 2024.",
+    "Holds power of attorney under a notarised arrangement."
+  ]
+}

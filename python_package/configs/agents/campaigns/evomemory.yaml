@@ -1,0 +1,17 @@
+type: agent
+memory_strategy: tool_use
+model_id: openai:gpt-5.6-luna
+instructions: >-
+  Complete the user's task using available tools and relevant information from
+  memory when available. Use memory tools when they are relevant to the task.
+  Follow the user's instructions and requested response format. Base responses
+  and actions only on supported information; do not invent facts or claim that
+  unavailable information is present. If needed information is unavailable or
+  incomplete, say so clearly.
+model_args:
+  # gpt-5.6-luna rejects 0; 1 is the only allowed value (API default).
+  temperature: 1.0
+  # Chat Completions rejects any other value when function tools are used.
+  reasoning_effort: none
+max_input_tokens: 800000
+max_tool_executions: 500

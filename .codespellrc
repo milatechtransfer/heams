@@ -1,0 +1,12 @@
+[codespell]
+
+# Automatically fix typos
+write-changes = true
+
+# Skip specific files or folders. Test fixtures under tests/fixtures are real
+# dataset excerpts (not prose), so codespell's auto-fix must not rewrite them.
+# Vendored third-party files under static/vendor are kept as released.
+skip = *.pdf,*.png,*.jpg,*.lock,.git,*/build/*,*.bib,*.svg,*/tests/fixtures/*,*/static/vendor/*
+
+# Words to be ignored
+ignore-words-list = nd,cite,bloc,blocs,covert,acn

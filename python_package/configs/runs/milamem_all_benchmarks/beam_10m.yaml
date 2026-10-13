@@ -1,0 +1,6 @@
+run_name: milamem_all_benchmarks_beam_10m
+experiments:
+  - name: gpt56_luna_milamem_beam_10m
+    agent_config_file: campaigns/beam.yaml
+    memory_system_config_file: campaigns/milamem.yaml
+    benchmark_config_file: full_campaign/beam_10m.yaml

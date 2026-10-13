@@ -1,0 +1,19 @@
+type: agent
+memory_strategy: recall_only_deterministic
+model_id: openai:gpt-5.6-luna
+instructions: >-
+  Answer the user's question using the relevant information from memory
+  provided in the prompt. Scan the provided memories before answering. Prefer
+  the most recent statement when memories conflict. For temporal questions, use
+  timestamps. For ordering questions, list events chronologically. For
+  preference questions, use the latest stated preference. Follow the user's
+  requested response format. Base responses only on supported information; do
+  not invent facts or claim that unavailable information is present. If the
+  memories do not contain enough information, say you do not have enough
+  information.
+model_args:
+  # gpt-5.6-luna rejects 0; 1 is the only allowed value (API default).
+  temperature: 1.0
+  reasoning_effort: none
+max_input_tokens: 800000
+max_tool_executions: 100

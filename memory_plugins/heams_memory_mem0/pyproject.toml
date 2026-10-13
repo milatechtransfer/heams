@@ -1,0 +1,41 @@
+[project]
+name = "heams-memory-mem0"
+version = "1.0.0"
+license = "MIT"
+description = "Mem0 memory plugin for HEAMS."
+requires-python = ">=3.12.6"
+dependencies = [
+    "heams>=1.0.0",
+    "mem0ai[nlp]>=2.0.18",
+    "pydantic>=2.12.5",
+    "tqdm>=4.66.0",
+    "chromadb>=1.5.9",
+]
+
+[project.entry-points."heams.memory_systems"]
+mem0 = "heams_memory_mem0.plugin:plugin"
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.1",
+    "pytest-dotenv>=0.5.2",
+]
+
+[tool.uv.sources]
+heams = { path = "../../python_package", editable = true }
+
+[tool.pytest.ini_options]
+env_files = [
+    "../../.env",
+]
+markers = [
+    "integration: marks tests that require live external services",
+    "requires_ollama: marks tests that require a running local Ollama server",
+]

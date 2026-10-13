@@ -1,0 +1,17 @@
+# The benchmark's answer prompts carry only the question (recall queries with the
+# full prompt), so the LoCoMo answering guidance lives here.
+type: agent
+memory_strategy: deterministic
+model_id: openai:gpt-5.6-luna
+instructions: >-
+  Answer the user's question about past conversations using the memories
+  provided in the prompt. Answer with a short phrase, using exact words from
+  the memories whenever possible. Use memory timestamps to resolve relative
+  dates. Base answers only on supported information; if the memories do not
+  support an answer, say that the information is not mentioned.
+model_args:
+  # gpt-5.6-luna rejects 0; 1 is the only allowed value (API default).
+  temperature: 1.0
+  reasoning_effort: none
+max_input_tokens: 800000
+max_tool_executions: 100

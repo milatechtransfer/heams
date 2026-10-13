@@ -1,0 +1,6 @@
+run_name: mem0_all_benchmarks_beam_100k
+experiments:
+  - name: gpt56_luna_mem0_beam_100k
+    agent_config_file: campaigns/beam.yaml
+    memory_system_config_file: campaigns/mem0.yaml
+    benchmark_config_file: full_campaign/beam_100k.yaml

@@ -1,0 +1,13 @@
+type: agent
+memory_strategy: recall_only_tool_use
+model_id: openai:gpt-4o-mini
+instructions: >-
+  Answer the user's request using relevant information retrieved from memory
+  when available. Use the content and any relevant metadata to resolve the
+  request accurately. Follow the requested response format; otherwise, keep
+  the answer concise and directly responsive. Do not invent facts or claim
+  that information is present when the available context does not support it.
+model_args:
+  temperature: 0.0
+  max_completion_tokens: 16384
+max_input_tokens: 96000

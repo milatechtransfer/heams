@@ -1,0 +1,135 @@
+{
+  "_comment": "Deterministic keyword rules for the rule-based baseline arm. Policy statements are deliberately uniform and give no examples, so these lists are what a competent engineer would write when expanding a category name into keywords -- NOT words lifted from corpus.json. Deriving them from the corpus would let the baseline score itself: an earlier corpus-derived ruleset produced a flattering 2.1% leak against the honest 25%.",
+  "health": [
+    "health",
+    "medical",
+    "medication",
+    "medicine",
+    "doctor",
+    "clinic",
+    "diagnos",
+    "symptom",
+    "prescription",
+    "illness",
+    "therapist"
+  ],
+  "work": [
+    "employer",
+    "employment",
+    "workplace",
+    "job",
+    "office",
+    "colleague",
+    "manager",
+    "career",
+    "profession"
+  ],
+  "pet": [
+    "pet",
+    "cat",
+    "dog",
+    "animal",
+    "veterinar",
+    "kitten",
+    "puppy"
+  ],
+  "relationship": [
+    "family",
+    "relationship",
+    "partner",
+    "spouse",
+    "friend",
+    "sibling",
+    "brother",
+    "sister",
+    "parent",
+    "cousin"
+  ],
+  "finance": [
+    "income",
+    "debt",
+    "bank",
+    "financial",
+    "finance",
+    "salary",
+    "loan",
+    "mortgage",
+    "savings",
+    "credit"
+  ],
+  "location": [
+    "address",
+    "lives",
+    "live in",
+    "home",
+    "neighbourhood",
+    "neighborhood",
+    "street",
+    "suburb",
+    "resides"
+  ],
+  "credentials": [
+    "password",
+    "credential",
+    "passcode",
+    "pin",
+    "login",
+    "recovery",
+    "passphrase",
+    "security code",
+    "door code"
+  ],
+  "travel": [
+    "travel",
+    "trip",
+    "flight",
+    "booking",
+    "hotel",
+    "visa",
+    "itinerary",
+    "airline",
+    "abroad"
+  ],
+  "education": [
+    "degree",
+    "education",
+    "school",
+    "university",
+    "college",
+    "course",
+    "diploma",
+    "graduat",
+    "scholarship"
+  ],
+  "preference": [
+    "prefer",
+    "taste",
+    "favourite",
+    "favorite",
+    "enjoy",
+    "likes"
+  ],
+  "government_id": [
+    "passport",
+    "licence",
+    "license",
+    "national id",
+    "social insurance",
+    "ssn",
+    "identification",
+    "certificate",
+    "residence card"
+  ],
+  "legal": [
+    "legal",
+    "dispute",
+    "court",
+    "lawsuit",
+    "solicitor",
+    "lawyer",
+    "claim",
+    "citation",
+    "attorney",
+    "mediation"
+  ]
+}

@@ -1,0 +1,19 @@
+id: letta_openai_k10
+backend_config:
+  type: letta
+  name: letta_openai_k10
+  # Recall returns core memory plus up to this many passages from the agent's own
+  # archival search; the agent chooses its search size, so fewer can come back.
+  top_k: 10
+  # gpt-4o-mini, not the benchmark agent's model: Letta 0.16.8 lets a request start
+  # with any of several tools only for gpt-4o/gpt-4o-mini (STRUCTURED_OUTPUT_MODELS).
+  model: openai/gpt-4o-mini
+  embedding: openai/text-embedding-3-small
+  # Letta's default; at 0.0 the agent's inner monologue can loop until the tool call is cut off.
+  temperature: 0.7
+  write_tools: [core_memory_append, core_memory_replace, archival_memory_insert]
+  search_tool: archival_memory_search
+  block_limit: 2000
+  context_window: 16000
+  # Postgres with pgvector and Letta 0.16.8's schema; see the plugin README.
+  pg_uri_env: LETTA_PG_URI

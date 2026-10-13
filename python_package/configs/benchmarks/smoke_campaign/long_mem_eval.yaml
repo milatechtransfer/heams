@@ -1,0 +1,14 @@
+type: long_mem_eval
+limit: 1
+answer_prompt: |-
+  I will give you a question from a user. Please answer the question based on the relevant chat history available through memory recall.
+
+  Use the memory recall tool to retrieve relevant chat history. Answer based only on relevant recalled chat history. If information is unavailable or incomplete, say that it cannot be determined.
+
+  Current Date: {question_date}
+  Question: {question}
+  Answer:
+evaluator:
+  type: long_mem_eval_llm_judge
+  judge_model_id: openai:gpt-4o-mini
+  success_threshold: 1.0

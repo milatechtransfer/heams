@@ -1,0 +1,26 @@
+# The same LoCoMo question with three memory systems: no memory (baseline), the
+# full conversation in context, and the example plugin. Needs OPENAI_API_KEY.
+# The example plugin only finds memories that contain the whole query word for
+# word, so it usually scores like no memory: it shows the plugin plumbing, not
+# good retrieval.
+#
+#   uv run heams run --config configs/runs/examples/compare_memory_systems.yaml \
+#     --output-dir results/compare_memory_systems
+#   uv run heams generate-report --results-dir results/compare_memory_systems
+#
+# To evaluate your own memory system, copy this file and point
+# memory_system_config_file at your YAML under configs/memory_systems/.
+run_name: compare_memory_systems
+experiments:
+  - name: gpt4o_mini_no_memory_locomo
+    agent_config_file: testing/gpt4o_mini_recall_only_tool_use.yaml
+    memory_system_config_file: campaigns/no_memory.yaml
+    benchmark_config_file: testing/locomo_smoke.yaml
+  - name: gpt4o_mini_in_context_locomo
+    agent_config_file: testing/gpt4o_mini_recall_only_tool_use.yaml
+    memory_system_config_file: campaigns/in_context.yaml
+    benchmark_config_file: testing/locomo_smoke.yaml
+  - name: gpt4o_mini_example_plugin_locomo
+    agent_config_file: testing/gpt4o_mini_recall_only_tool_use.yaml
+    memory_system_config_file: examples/example_in_memory.yaml
+    benchmark_config_file: testing/locomo_smoke.yaml

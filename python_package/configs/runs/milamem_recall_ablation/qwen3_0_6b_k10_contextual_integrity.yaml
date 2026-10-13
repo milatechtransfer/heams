@@ -1,0 +1,6 @@
+run_name: milamem_recall_ablation_qwen3_0_6b_k10_contextual_integrity
+experiments:
+  - name: gpt56_luna_milamem_recall_qwen3_0_6b_k10_contextual_integrity
+    agent_config_file: campaigns/contextual_integrity_deterministic_recall.yaml
+    memory_system_config_file: milamem_recall_ablation/qwen3_0_6b_k10.yaml
+    benchmark_config_file: full_campaign/contextual_integrity.yaml

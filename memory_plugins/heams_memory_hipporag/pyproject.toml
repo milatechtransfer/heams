@@ -1,0 +1,32 @@
+[project]
+name = "heams-memory-hipporag"
+version = "1.0.0"
+license = "MIT"
+description = "HippoRAG 2 memory plugin for HEAMS."
+requires-python = ">=3.12.6"
+dependencies = [
+    "heams>=1.0.0",
+    # GitHub main, not PyPI: the 2.0.0a4 release has no Chunk metadata.
+    "hipporag @ git+https://github.com/OSU-NLP-Group/HippoRAG@1438aba3fc44ff10573e5a5e1e7cc3c7f9794aff",
+]
+
+[project.entry-points."heams.memory_systems"]
+hipporag = "heams_memory_hipporag.plugin:plugin"
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.uv.sources]
+heams = { path = "../../python_package", editable = true }
+
+[tool.pytest.ini_options]
+env_files = [
+    "../../.env",
+]
+markers = [
+    "integration: marks tests that require live external services",
+]

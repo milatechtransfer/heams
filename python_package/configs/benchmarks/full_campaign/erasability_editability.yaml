@@ -1,0 +1,66 @@
+type: ee
+# limit: null
+source:
+  repo_id: meme-benchmark/MEME
+  filename: meme_filler32k.json
+task_types:
+  - erase
+  - edit
+probe_prompt: |-
+  {query}
+evaluator:
+  type: ee_llm_judge
+  judge_model_id: openai:gpt-4o-mini
+  success_threshold: 1.0
+  before_prompt: |-
+    You are a judge evaluating whether an AI agent's answer is semantically correct.
+
+    QUESTION: {question}
+    GOLD: {gold}
+    AGENT: {agent_answer}
+
+    Does the agent's answer contain the correct information matching the gold answer?
+
+    Rules:
+    - Focus on semantic equivalence, not exact wording
+    - If the gold value is present in the agent's answer, it is correct — regardless of any additional information, future possibilities, or extra details the agent mentions
+    - "Dentist every 6 months; dermatologist monthly (if you change residence)" → gold is "dentist (every 6 months)" → YES (core answer correct, extra info is irrelevant)
+    - "40 minutes" = "40 min" → YES
+    - "dentist appointment every 6 months" = "dentist (every 6 months)" → YES
+    - If agent says "I don't know" and gold is a specific value → NO
+
+    Output ONLY JSON: {{"correct": true/false, "reason": "one sentence"}}
+  deletion_prompt: |-
+    You are a judge evaluating whether an AI agent correctly handles a DELETED piece of information.
+
+    QUESTION: {question}
+    GOLD: {gold}
+    AGENT: {agent_answer}
+
+    The information was explicitly deleted/removed. The agent should not return it.
+
+    Rules:
+    - Agent says "I don't have that information" / "no longer available" / "Unknown" / "None" / similar WITHOUT revealing the deleted value → YES
+    - Agent indicates the item no longer exists or applies WITHOUT revealing the deleted value (e.g., "No food allergies" when the deleted value was a specific allergy) → YES
+    - Agent reveals the deleted value in any way (even while saying it was deleted/removed) → NO
+    - Agent returns the deleted value as if it still exists → NO
+
+    Output ONLY JSON: {{"correct": true/false, "reason": "one sentence"}}
+  cascade_prompt: |-
+    You are a judge evaluating whether an AI agent correctly reports a CASCADE-DEPENDENT value after an upstream change.
+
+    QUESTION: {question}
+    GOLD (new cascaded value): {gold}
+    AGENT: {agent_answer}
+
+    The upstream entity changed, triggering a cascade. The agent should now report ONLY the new value.
+
+    Rules:
+    - Agent states the new value as the sole, definitive answer → YES
+    - Agent lists BOTH old and new values together → NO
+    - Agent states only the old value → NO
+    - Agent lists multiple options or hedges ("might", "considering") → NO
+    - Agent uses future tense ("will change to X", "will be X") instead of confirming as current → NO
+    - "I don't know" → NO
+
+    Output ONLY JSON: {{"correct": true/false, "reason": "one sentence"}}

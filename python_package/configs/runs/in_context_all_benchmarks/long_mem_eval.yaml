@@ -1,0 +1,6 @@
+run_name: in_context_all_benchmarks_long_mem_eval
+experiments:
+  - name: gpt56_luna_in_context_long_mem_eval
+    agent_config_file: campaigns/long_mem_eval.yaml
+    memory_system_config_file: campaigns/in_context.yaml
+    benchmark_config_file: full_campaign/long_mem_eval.yaml

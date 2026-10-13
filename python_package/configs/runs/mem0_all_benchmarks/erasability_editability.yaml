@@ -1,0 +1,6 @@
+run_name: mem0_all_benchmarks_erasability_editability
+experiments:
+  - name: gpt56_luna_mem0_erasability_editability
+    agent_config_file: campaigns/erasability_editability.yaml
+    memory_system_config_file: campaigns/mem0.yaml
+    benchmark_config_file: full_campaign/erasability_editability.yaml

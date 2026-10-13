@@ -1,0 +1,11 @@
+id: hipporag_openai
+backend_config:
+  type: hipporag
+  name: hipporag_openai
+  top_k: 5
+  # Passed verbatim to HippoRAG's BaseConfig; unset fields keep HippoRAG's defaults.
+  global_config:
+    llm_name: gpt-4o-mini
+    embedding_model_name: text-embedding-3-small
+    openie_mode: online
+    temperature: 0.0

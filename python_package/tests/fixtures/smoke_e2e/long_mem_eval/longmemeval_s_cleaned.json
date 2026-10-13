@@ -1,0 +1,21 @@
+[
+  {
+    "question_id": "SMOKE-LME-1",
+    "question_type": "single-session-user",
+    "question": "Where does A live?",
+    "answer": "Montreal",
+    "question_date": "2024-01-02",
+    "haystack_session_ids": ["S0"],
+    "haystack_dates": ["2024-01-01"],
+    "haystack_sessions": [
+      [
+        {
+          "role": "user",
+          "content": "I live in Montreal.",
+          "has_answer": true
+        }
+      ]
+    ],
+    "answer_session_ids": ["S0"]
+  }
+]

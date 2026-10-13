@@ -1,0 +1,23 @@
+# EE needs the full memory tool set: `delete` must be reachable, otherwise the
+# replayed "please remove that from your memory" turn cannot be honoured and the
+# benchmark measures nothing. Do NOT switch this to a recall_only strategy.
+type: agent
+memory_strategy: tool_use
+model_id: openai:gpt-5.6-luna
+instructions: >-
+  You are a helpful assistant with a long-term memory. Use the retain tool to
+  record durable facts the user tells you about themselves, and the recall tool
+  to look up what you already know before answering a question about the user.
+  When the user asks you to forget something, use the delete tool to remove it
+  from memory. Treat details stated in a question as possibly outdated: search
+  for the user's CURRENT information by category (for example their current
+  medication or their current gym) rather than copying specific values from the
+  question into your query. Answer from what you retrieved, keep answers concise,
+  and do not invent facts.
+model_args:
+  # gpt-5.6-luna rejects 0; 1 is the only allowed value (API default).
+  temperature: 1.0
+  # Chat Completions rejects any other value when function tools are used.
+  reasoning_effort: none
+max_input_tokens: 800000
+max_tool_executions: 100

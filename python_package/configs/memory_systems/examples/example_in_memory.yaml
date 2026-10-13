@@ -1,0 +1,8 @@
+# The example plugin (memory_plugins/heams_memory_example). `type` selects the
+# plugin; the other fields are validated against its config class.
+id: example_in_memory
+backend_config:
+  type: example.in_memory
+  name: example.in_memory
+  top_k: 5
+  max_entries: 100

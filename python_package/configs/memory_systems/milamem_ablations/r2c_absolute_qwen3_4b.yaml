@@ -1,0 +1,19 @@
+# R2c: absolute fusion + relative filter, Qwen3-Embedding-4B in-process (GPU).
+id: milamem_r2c_absolute_qwen3_4b
+backend_config:
+  type: milamem
+  name: milamem_r2c_absolute_qwen3_4b
+  top_k: 20
+  temporal_metadata:
+    enabled: true
+  recall_strategy:
+    kind: hybrid
+    embed_model: st:Qwen/Qwen3-Embedding-4B
+    query_prompt: "Instruct: Given a question about a past conversation with the user, retrieve memories that help answer it\nQuery: "
+    hybrid_weight: 0.5
+    fusion: absolute
+    filter_ratio: 0.5
+  dedup_strategy:
+    enabled: false
+  consolidation:
+    enabled: false

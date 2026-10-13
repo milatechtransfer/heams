@@ -1,0 +1,6 @@
+run_name: no_memory_all_benchmarks_stale
+experiments:
+  - name: gpt56_luna_no_memory_stale
+    agent_config_file: campaigns/stale.yaml
+    memory_system_config_file: campaigns/no_memory.yaml
+    benchmark_config_file: full_campaign/stale.yaml

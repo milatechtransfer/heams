@@ -1,0 +1,15 @@
+type: agent
+memory_strategy: recall_only_deterministic
+model_id: openai:gpt-5.6-luna
+instructions: >-
+  Complete this single-turn task using the relevant facts supplied from memory.
+  Write the message that performs the user's requested action and output only
+  that message. Do not ask follow-up questions, include placeholders, or add
+  capability disclaimers. Use only supported information and only the details
+  necessary for the exact request and recipient.
+model_args:
+  # gpt-5.6-luna rejects 0; 1 is the only allowed value (API default).
+  temperature: 1.0
+  reasoning_effort: none
+max_input_tokens: 800000
+max_tool_executions: 100

@@ -1,0 +1,67 @@
+[project]
+name = "heams-memory-letta"
+version = "1.0.0"
+license = "MIT"
+description = "Letta (MemGPT) memory plugin for HEAMS."
+requires-python = ">=3.12.6,<3.14"
+dependencies = [
+    "heams>=1.0.0",
+    # The last Python Letta server. Unpinned, `letta` on PyPI is Letta Code (0.32+),
+    # a terminal app with no agents API.
+    "letta[server]==0.16.8",
+    # letta imports OCRPageObject from the mistralai top level, which 2.0 removed.
+    "mistralai>=1.8.1,<2",
+    # 0.16.8 is Postgres-only: its ORM imports asyncpg unconditionally, pgvector backs
+    # archival search, and pg8000 runs the Alembic migrations that create the schema.
+    "asyncpg>=0.30.0",
+    "pg8000>=1.30.3",
+    "pgvector>=0.2.3",
+    "psycopg2-binary>=2.9.10",
+]
+
+[project.entry-points."heams.memory_systems"]
+letta = "heams_memory_letta.plugin:plugin"
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.1",
+    "pytest-dotenv>=0.5.2",
+]
+
+[tool.uv]
+# letta 0.16.8 pins several shared dependencies to versions older than heams's,
+# and resolving them as pinned downgrades the benchmark agent's own dependencies:
+# OpenTelemetry (api/sdk 1.30.0, instrumentation 0.51b0; tinyagent imports
+# GEN_AI_AGENT_DESCRIPTION, absent before 0.62b0), mcp (1.12.4 via fastmcp; tinyagent
+# depends on it), uvicorn/websockets (Letta's standalone server, unused in-process) and
+# docstring-parser. These hold every one at heams's current version. Verified:
+# Letta starts, registers the six MemGPT tools, and `heams memory list` loads tinyagent.
+override-dependencies = [
+    "opentelemetry-api==1.41.0",
+    "opentelemetry-sdk==1.41.0",
+    "opentelemetry-exporter-otlp==1.41.0",
+    "opentelemetry-instrumentation-requests==0.62b0",
+    "opentelemetry-instrumentation-sqlalchemy==0.62b0",
+    "mcp==1.27.0",
+    "uvicorn[standard]==0.44.0",
+    "websockets==17.1",
+    "docstring-parser==0.18.0",
+]
+
+[tool.uv.sources]
+heams = { path = "../../python_package", editable = true }
+
+[tool.pytest.ini_options]
+env_files = [
+    "../../.env",
+]
+markers = [
+    "integration: marks tests that require Postgres and a live model provider",
+]

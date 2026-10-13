@@ -1,0 +1,15 @@
+# Governance layer ablation, canonical backend, combined-arm only.
+run_name: canonical_governance_ablation
+experiments:
+  - name: gpt4o_mini_no_policy_canonical_governance_ablation
+    agent_config_file: testing/contextual_integrity_gpt4o_mini_recall_only_deterministic.yaml
+    memory_system_config_file: campaigns/milamem.yaml
+    benchmark_config_file: testing/contextual_integrity_smoke.yaml
+  - name: gpt4o_mini_both_rules_canonical_governance_ablation
+    agent_config_file: testing/contextual_integrity_gpt4o_mini_recall_only_deterministic.yaml
+    memory_system_config_file: milamem_retention_and_recall_rules.yaml
+    benchmark_config_file: testing/contextual_integrity_smoke.yaml
+  - name: gpt4o_mini_both_hybrid_canonical_governance_ablation
+    agent_config_file: testing/contextual_integrity_gpt4o_mini_recall_only_deterministic.yaml
+    memory_system_config_file: milamem_retention_and_recall_hybrid.yaml
+    benchmark_config_file: testing/contextual_integrity_smoke.yaml

@@ -1,0 +1,9 @@
+run_name: retention_policy_smoke
+experiments:
+  # RP-01 only. The sample sets RP-01 ("Do not retain the user's health
+  # information.") on the memory system, whose policy_rules compile it to a
+  # health blocklist: health chunks should be dropped, everything else stored.
+  - name: retention_rp01_health_smoke
+    agent_config_file: testing/contextual_integrity_gpt4o_mini_recall_only_deterministic.yaml
+    memory_system_config_file: retention_rules.yaml
+    benchmark_config_file: retention_policy_smoke.yaml

@@ -1,0 +1,20 @@
+# Hybrid recall, absolute fusion + relative filter, Qwen3-Embedding-0.6B in-process.
+id: milamem_recall_qwen3_0_6b_k10
+backend_config:
+  type: milamem
+  name: milamem_recall_qwen3_0_6b_k10
+  top_k: 10
+  temporal_metadata:
+    enabled: true
+  recall_strategy:
+    kind: hybrid
+    embed_model: st:Qwen/Qwen3-Embedding-0.6B
+    # Benchmark-agnostic task; Qwen3 expects "Instruct: {task}\nQuery: {query}".
+    query_prompt: "Instruct: Given a user message, retrieve relevant memories that help respond to it\nQuery: "
+    hybrid_weight: 0.5
+    fusion: absolute
+    filter_ratio: 0.5
+  dedup_strategy:
+    enabled: false
+  consolidation:
+    enabled: false

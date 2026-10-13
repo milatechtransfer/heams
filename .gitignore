@@ -1,0 +1,42 @@
+.env
+
+# Zensical documentation
+/site/
+
+*.vscode/
+python_package/datasets/*
+!python_package/datasets/transparency/
+!python_package/datasets/transparency/seed.json
+python_package/datasets/transparency/beam_*.json
+!python_package/datasets/contextual_integrity/
+python_package/datasets/contextual_integrity/ci_*.json
+
+# Retention Policy: authored sources, the generated matrix, and the tools that
+# build it. Tracked because the benchmark's tests read dataset.json -- without
+# it a fresh clone cannot run them.
+!python_package/datasets/retention_policy/
+!python_package/datasets/retention_policy/corpus.json
+!python_package/datasets/retention_policy/policies.json
+!python_package/datasets/retention_policy/rules.json
+!python_package/datasets/retention_policy/dataset.json
+!python_package/datasets/retention_policy/matrix.py
+!python_package/datasets/retention_policy/make_configs.py
+!python_package/datasets/retention_policy/generate.py
+!python_package/datasets/retention_policy/README.md
+.idea/
+
+# Python build / cache artifacts
+**/__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+build/
+dist/
+
+# Generated benchmark run outputs (timestamped subfolders)
+python_package/results/
+*.bin
+*.jsonl
+*.sqlite3

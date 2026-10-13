@@ -1,0 +1,45 @@
+[project]
+name = "heams-memory-milamem"
+version = "1.0.0"
+license = "MIT"
+description = "MilaMem and basic_complete memory plugins for HEAMS."
+requires-python = ">=3.12.6"
+dependencies = [
+    "heams>=1.0.0",
+    "any-llm-sdk>=1.25.0",
+    "numpy>=2.4.1",
+    "pydantic>=2.12.5",
+    "pyyaml>=6.0.3",
+    "rank-bm25>=0.2.2",
+    "sentence-transformers>=3.0.0",
+    "tiktoken>=0.7.0",
+]
+
+[project.entry-points."heams.memory_systems"]
+milamem = "heams_memory_milamem.plugin:milamem_plugin"
+basic_complete_memory_system = "heams_memory_milamem.plugin:basic_complete_plugin"
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.1",
+    "pytest-dotenv>=0.5.2",
+]
+
+[tool.uv.sources]
+heams = { path = "../../python_package", editable = true }
+
+[tool.pytest.ini_options]
+env_files = [
+    "../../.env",
+]
+markers = [
+    "integration: marks tests that require live external services",
+    "requires_ollama: marks tests that require a running local Ollama server",
+]

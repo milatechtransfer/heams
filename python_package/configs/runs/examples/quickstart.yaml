@@ -1,0 +1,16 @@
+# Smallest end-to-end run: one LoCoMo question, answered by a gpt-4o-mini agent
+# that uses in-context memory. Needs OPENAI_API_KEY.
+#
+#   uv run heams run --config configs/runs/examples/quickstart.yaml \
+#     --output-dir results/quickstart
+#   uv run heams generate-report --results-dir results/quickstart
+#
+# Each experiment pairs one agent, one memory system and one benchmark; the
+# file names below are relative to configs/agents/, configs/memory_systems/
+# and configs/benchmarks/.
+run_name: quickstart
+experiments:
+  - name: gpt4o_mini_in_context_locomo
+    agent_config_file: testing/gpt4o_mini_recall_only_tool_use.yaml
+    memory_system_config_file: campaigns/in_context.yaml
+    benchmark_config_file: testing/locomo_smoke.yaml

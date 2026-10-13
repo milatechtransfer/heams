@@ -1,0 +1,6 @@
+run_name: mem0_all_benchmarks_locomo
+experiments:
+  - name: gpt56_luna_mem0_locomo
+    agent_config_file: campaigns/locomo.yaml
+    memory_system_config_file: campaigns/mem0.yaml
+    benchmark_config_file: full_campaign/locomo.yaml

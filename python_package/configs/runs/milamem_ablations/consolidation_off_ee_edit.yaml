@@ -1,0 +1,6 @@
+run_name: milamem_consolidation_off_ee_edit
+experiments:
+  - name: gpt56_luna_milamem_consolidation_off_ee_edit
+    agent_config_file: milamem_ablations/ee_deterministic.yaml
+    memory_system_config_file: milamem_ablations/consolidation_off.yaml
+    benchmark_config_file: milamem_ablations/ee_edit.yaml

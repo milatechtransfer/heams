@@ -1,0 +1,6 @@
+run_name: heams_performance_exps_letta_beam_1m
+experiments:
+  - name: gpt56_luna_letta_beam_1m
+    agent_config_file: heams_performance_exps/beam_deterministic_recall.yaml
+    memory_system_config_file: heams_performance_exps/letta_openai.yaml
+    benchmark_config_file: heams_performance_exps/beam_1m.yaml

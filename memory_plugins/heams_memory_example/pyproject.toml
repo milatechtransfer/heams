@@ -1,0 +1,19 @@
+[project]
+name = "heams-memory-example"
+version = "1.0.0"
+license = "MIT"
+description = "Example external memory plugin for HEAMS."
+requires-python = ">=3.12"
+dependencies = [
+	"heams>=1.0.0",
+]
+
+[project.entry-points."heams.memory_systems"]
+example_in_memory = "heams_memory_example.plugin:plugin"
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]

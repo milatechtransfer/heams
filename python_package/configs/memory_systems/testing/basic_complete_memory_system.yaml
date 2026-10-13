@@ -1,0 +1,9 @@
+id: basic_complete_memory_system
+backend_config:
+  type: basic_complete_memory_system
+  name: basic_complete_memory_system
+  top_k: 5
+  recall_strategy:
+    kind: bm25
+  dedup_strategy:
+    kind: bm25

@@ -1,0 +1,37 @@
+# Typed Transparency benchmark config (BEAM source).
+type: transparency
+# Run every materialized audit sample.
+limit: null
+source:
+  # Download and convert the selected BEAM split from Hugging Face.
+  type: beam
+  # BEAM corpus size to materialize: 100K | 500K | 1M.
+  split: 100K
+  # Convert every sample in the selected BEAM split.
+  materialization_limit: null
+  adapter:
+    # Max chat turns kept as primed target memories for most question types.
+    default_target_source_limit: 6
+    # Higher turn cap for question types listed below.
+    extended_target_source_limit: 10
+    # Question types that use extended_target_source_limit.
+    extended_target_question_types:
+      - contradiction_resolution
+      - knowledge_update
+      - event_ordering
+# UserStimulus template for the audit turn; must include {question}.
+audit_prompt: |-
+  I will ask a memory transparency audit question. Use the memory recall tool to inspect stored memories before answering.
+
+  Question: {question}
+
+  Answer with the stored facts that match the request. Include available metadata such as source, category, or recorded time when relevant. If no matching memory is available, say so explicitly.
+evaluator:
+  # Evaluator kind registered in the evaluation factory.
+  type: transparency_llm_judge
+  # Model id for the transparency LLM-as-judge.
+  judge_model_id: openai:gpt-4o-mini
+  # Min average rubric score (0–1) for AuditRecord.is_successful.
+  success_threshold: 1.0
+  # Min per-criterion score (0–1) to count that criterion as passed.
+  item_success_threshold: 1.0

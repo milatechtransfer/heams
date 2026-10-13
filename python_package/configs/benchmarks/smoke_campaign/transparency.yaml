@@ -1,0 +1,24 @@
+type: transparency
+limit: 1
+source:
+  type: beam
+  split: 100K
+  materialization_limit: 1
+  adapter:
+    default_target_source_limit: 6
+    extended_target_source_limit: 10
+    extended_target_question_types:
+      - contradiction_resolution
+      - knowledge_update
+      - event_ordering
+audit_prompt: |-
+  I will ask a memory transparency audit question. Use the memory recall tool to inspect stored memories before answering.
+
+  Question: {question}
+
+  Answer with the stored facts that match the request. Include available metadata such as source, category, or recorded time when relevant. If no matching memory is available, say so explicitly.
+evaluator:
+  type: transparency_llm_judge
+  judge_model_id: openai:gpt-4o-mini
+  success_threshold: 1.0
+  item_success_threshold: 1.0

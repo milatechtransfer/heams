@@ -1,0 +1,29 @@
+# C1-on-10: as C1-on-none, plus batch consolidation once 10 records are pending.
+id: milamem_consolidation_on_10
+backend_config:
+  type: milamem
+  name: milamem_consolidation_on_10
+  top_k: 10
+  temporal_metadata:
+    enabled: true
+  recall_strategy:
+    kind: hybrid
+    embed_model: openai:text-embedding-3-small
+    hybrid_weight: 0.5
+    fusion: absolute
+    filter_ratio: 0.5
+  dedup_strategy:
+    enabled: true
+    kind: semantic
+    embed_model: openai:text-embedding-3-small
+    # Unbounded: the window is measured against wall-clock time (see the ablation spec).
+    window:
+      days: null
+  consolidation:
+    enabled: true
+    pending_threshold: 10
+    # The default 50 silently defers most of the primed haystack.
+    max_pending_per_run: 100000
+    llm_model: openai:gpt-4o-mini
+    similarity_threshold: 0.85
+    max_cluster_size: 8

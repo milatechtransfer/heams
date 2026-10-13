@@ -1,0 +1,6 @@
+run_name: in_context_all_benchmarks_beam_500k
+experiments:
+  - name: gpt56_luna_in_context_beam_500k
+    agent_config_file: campaigns/beam.yaml
+    memory_system_config_file: campaigns/in_context.yaml
+    benchmark_config_file: full_campaign/beam_500k.yaml

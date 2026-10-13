@@ -1,0 +1,57 @@
+[
+  {
+    "conversation_id": "fixture-1",
+    "conversation_seed": {"category": "general", "title": "Fixture chat"},
+    "chat": [
+      [
+        {
+          "id": 1,
+          "role": "user",
+          "content": "My name is Alex and I moved to Montreal in March 2024.",
+          "time_anchor": "2024-03-01",
+          "index": "0"
+        },
+        {
+          "id": 2,
+          "role": "assistant",
+          "content": "Got it, Alex in Montreal since March 2024.",
+          "time_anchor": "2024-03-01",
+          "index": "1"
+        },
+        {
+          "id": 3,
+          "role": "user",
+          "content": "Then I started a new job in June, then bought a bike in July.",
+          "time_anchor": "2024-07-01",
+          "index": "2"
+        }
+      ]
+    ],
+    "probing_questions": {
+      "information_extraction": [
+        {
+          "question": "Where does Alex live?",
+          "answer": "Montreal",
+          "difficulty": "easy",
+          "source_chat_ids": [1],
+          "rubric": {
+            "nuggets": [{"description": "Mentions Montreal as the city of residence"}]
+          }
+        }
+      ],
+      "event_ordering": [
+        {
+          "question": "In what order did Alex move, start a job, and buy a bike?",
+          "difficulty": "medium",
+          "rubric": {
+            "nuggets": [
+              {"description": "Moved to Montreal"},
+              {"description": "Started a new job"},
+              {"description": "Bought a bike"}
+            ]
+          }
+        }
+      ]
+    }
+  }
+]

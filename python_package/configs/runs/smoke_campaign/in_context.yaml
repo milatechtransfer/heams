@@ -1,0 +1,38 @@
+run_name: smoke_in_context
+experiments:
+  - name: gpt56_luna_in_context_locomo
+    agent_config_file: campaigns/locomo.yaml
+    memory_system_config_file: campaigns/in_context.yaml
+    benchmark_config_file: smoke_campaign/locomo.yaml
+  - name: gpt56_luna_in_context_evomemory_single_turn
+    agent_config_file: campaigns/evomemory.yaml
+    memory_system_config_file: campaigns/in_context.yaml
+    benchmark_config_file: smoke_campaign/evomemory_single_turn.yaml
+  - name: gpt56_luna_in_context_long_mem_eval
+    agent_config_file: campaigns/long_mem_eval.yaml
+    memory_system_config_file: campaigns/in_context.yaml
+    benchmark_config_file: smoke_campaign/long_mem_eval.yaml
+  - name: gpt56_luna_in_context_transparency
+    agent_config_file: campaigns/transparency.yaml
+    memory_system_config_file: campaigns/in_context.yaml
+    benchmark_config_file: smoke_campaign/transparency.yaml
+  - name: gpt56_luna_in_context_contextual_integrity
+    agent_config_file: campaigns/contextual_integrity.yaml
+    memory_system_config_file: campaigns/in_context.yaml
+    benchmark_config_file: smoke_campaign/contextual_integrity.yaml
+  - name: gpt56_luna_in_context_stale
+    agent_config_file: campaigns/stale.yaml
+    memory_system_config_file: campaigns/in_context.yaml
+    benchmark_config_file: smoke_campaign/stale.yaml
+  - name: gpt56_luna_in_context_mpbench
+    agent_config_file: campaigns/mpbench.yaml
+    memory_system_config_file: campaigns/in_context.yaml
+    benchmark_config_file: smoke_campaign/mpbench.yaml
+  - name: gpt56_luna_in_context_erasability_editability
+    agent_config_file: campaigns/erasability_editability.yaml
+    memory_system_config_file: campaigns/in_context.yaml
+    benchmark_config_file: smoke_campaign/erasability_editability.yaml
+  - name: gpt56_luna_in_context_beam_100k
+    agent_config_file: campaigns/beam.yaml
+    memory_system_config_file: campaigns/in_context.yaml
+    benchmark_config_file: smoke_campaign/beam_100k.yaml

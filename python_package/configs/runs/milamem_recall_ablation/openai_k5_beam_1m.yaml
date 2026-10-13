@@ -1,0 +1,6 @@
+run_name: milamem_recall_ablation_openai_k5_beam_1m
+experiments:
+  - name: gpt56_luna_milamem_recall_openai_k5_beam_1m
+    agent_config_file: campaigns/beam_deterministic_recall.yaml
+    memory_system_config_file: milamem_recall_ablation/openai_k5.yaml
+    benchmark_config_file: milamem_recall_ablation/beam_1m.yaml

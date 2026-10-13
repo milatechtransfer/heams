@@ -1,0 +1,6 @@
+run_name: mem0_all_benchmarks_mpbench
+experiments:
+  - name: gpt56_luna_mem0_mpbench
+    agent_config_file: campaigns/mpbench.yaml
+    memory_system_config_file: campaigns/mem0.yaml
+    benchmark_config_file: full_campaign/mpbench.yaml

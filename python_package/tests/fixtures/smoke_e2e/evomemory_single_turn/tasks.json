@@ -1,0 +1,11 @@
+{
+  "id": "SMOKE-EVO-ST-1",
+  "name": "smoke evomemory single",
+  "tasks": [
+    {
+      "task_id": "task-1",
+      "input_text": "Answer with Firefox",
+      "target": "Firefox"
+    }
+  ]
+}

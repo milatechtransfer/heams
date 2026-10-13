@@ -1,0 +1,10 @@
+[
+  {
+    "sample_id": "SMOKE-LOC-1",
+    "conversation": {
+      "session_1": [{"speaker": "A", "text": "Hi.", "dia_id": "D1:1"}],
+      "session_1_date_time": "2024-01-01 00:00:00"
+    },
+    "qa": [{"question": "Q?", "answer": "A", "evidence": ["D1:1"]}]
+  }
+]

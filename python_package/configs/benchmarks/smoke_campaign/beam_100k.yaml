@@ -1,0 +1,85 @@
+type: beam
+split: 100K
+limit: 1
+# All 10 abilities (~20 questions). Locomo smoke also sets limit_stimuli: 1.
+answer_prompt: |-
+  Answer the following question using only information stored in memory.
+  Scan recalled memories before answering. Prefer the most recent statement
+  when memories conflict. For temporal questions, use timestamps. For
+  ordering questions, list events chronologically. For preference questions,
+  use the latest stated preference. If the memories do not contain enough
+  information, say you do not have enough information. Do not invent facts.
+
+  Question: {question}
+  Answer:
+evaluator:
+  type: beam_llm_judge
+  judge_model_id: openai:gpt-4o-mini
+  success_threshold: 0.5
+  pass_threshold: 0.5
+  judge_system_prompt: >-
+    You are an expert evaluator assessing whether an AI assistant's response
+    satisfies specific rubric criteria. Be objective, fair, and consistent.
+    Return ONLY valid JSON with the exact format requested.
+  nugget_judge_template: |-
+    Evaluate whether the following LLM response demonstrates compliance with the specified RUBRIC CRITERION.
+
+    QUESTION:
+    {question}
+
+    LLM RESPONSE:
+    {response}
+
+    RUBRIC CRITERION:
+    {nugget}
+
+    SCORING GUIDELINES:
+
+    First, determine whether the rubric criterion is a POSITIVE requirement (the response SHOULD include something) or a NEGATIVE constraint (the response SHOULD NOT include something).
+
+    **For POSITIVE requirements**:
+    - **1.0**: The required element is present, accurate, and complete.
+    - **0.5**: The required element is partially present, has minor inaccuracies, or is incomplete.
+    - **0.0**: The required element is missing, incorrect, or the response is off-topic.
+
+    **For NEGATIVE constraints**:
+    - **1.0**: The response is responsive AND the prohibited element is absent.
+    - **0.5**: The response is responsive but contains a borderline reference to the prohibited element.
+    - **0.0**: The prohibited element is present, OR the response is non-responsive.
+
+    **Compound statements**: all elements correct = 1.0; some = 0.5; none = 0.0.
+
+    EVALUATION RULES:
+    1. Paraphrases and synonyms are acceptable.
+    2. Treat equivalent numbers, currencies, dates, and durations as identical.
+    3. Ignore case, punctuation, and whitespace differences.
+    4. Do not penalize hedging if the substantive content satisfies the criterion.
+    5. Do not penalize tone, formatting, or length unless the rubric requires a format.
+    6. Off-topic or refusal scores 0.0.
+    7. Evaluate this criterion in isolation.
+    8. Vague generic answers score lower than specific detailed answers.
+
+    Return JSON with exactly two fields:
+    {{"score": <0.0 or 0.5 or 1.0>, "reason": "one sentence"}}
+  event_extract_template: |-
+    Extract all distinct events or facts mentioned in the following response,
+    in the exact order they are presented.
+
+    RESPONSE:
+    {response}
+
+    Return JSON: {{"events": ["event 1", "event 2"]}}
+  event_align_template: |-
+    Given the extracted event from an LLM response, determine which reference
+    event it best corresponds to.
+
+    EXTRACTED EVENT:
+    {extracted_event}
+
+    REFERENCE EVENTS:
+    {reference_events}
+
+    If it matches one reference event (even approximately), return that 0-based
+    index. If it matches none, return -1.
+
+    Return JSON: {{"index": <int>, "reason": "one sentence"}}

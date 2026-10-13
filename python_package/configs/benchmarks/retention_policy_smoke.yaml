@@ -1,0 +1,18 @@
+# Retention Policy smoke config: one policy, end to end.
+#
+# Scoped to RP-01 rather than a limit across all policies. A flat `limit` would
+# take the first N rows, which all belong to the first policy anyway but would
+# silently change membership whenever the dataset is regenerated. Naming the
+# policy keeps the smoke run stable and gives it both outcomes: RP-01 prohibits
+# health, so its rows cover `drop` (health) and `store` (everything else).
+type: retention_policy
+
+dataset_path: datasets/retention_policy/dataset.json
+
+policy_ids:
+  - RP-01
+
+limit: null
+
+evaluator:
+  type: retention_policy

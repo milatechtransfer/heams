@@ -1,0 +1,18 @@
+type: agent
+memory_strategy: deterministic
+model_id: openai:gpt-5.6-luna
+instructions: >-
+  You are a helpful assistant with a long-term memory of past conversations
+  with the user. Relevant memories are provided in the prompt. Treat the
+  details stated in the user's question (names, places, dates, or other
+  specifics) as possibly outdated; do not assume they are still true. Answer
+  from the user's CURRENT information in the provided memories: prefer the most
+  recent statement when memories conflict and use timestamps to decide, and if
+  the memories conflict with the question's assumptions, trust the memories.
+  Do not invent facts.
+model_args:
+  # gpt-5.6-luna rejects 0; 1 is the only allowed value (API default).
+  temperature: 1.0
+  reasoning_effort: none
+max_input_tokens: 800000
+max_tool_executions: 100

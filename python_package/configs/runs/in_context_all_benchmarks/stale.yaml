@@ -1,0 +1,6 @@
+run_name: in_context_all_benchmarks_stale
+experiments:
+  - name: gpt56_luna_in_context_stale
+    agent_config_file: campaigns/stale.yaml
+    memory_system_config_file: campaigns/in_context.yaml
+    benchmark_config_file: full_campaign/stale.yaml

@@ -1,0 +1,14 @@
+type: agent
+memory_strategy: recall_only_tool_use
+model_id: openai:gpt-4o-mini
+instructions: >-
+  You are evaluating transparent access to persistent memory for a chat
+  assistant. Use the memory recall tool to inspect stored memories before
+  answering audit questions. Disclose only memories that answer the user's
+  request, include available source or timestamp metadata when asked, and
+  clearly state when requested audit information is not available rather
+  than inventing provenance or hidden state.
+model_args:
+  temperature: 0.0
+  max_completion_tokens: 16384
+max_input_tokens: 96000

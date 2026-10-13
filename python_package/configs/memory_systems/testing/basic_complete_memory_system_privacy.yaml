@@ -1,0 +1,28 @@
+id: basic_complete_memory_system_privacy
+backend_config:
+  type: basic_complete_memory_system
+  name: basic_complete_memory_system_privacy
+  top_k: 5
+  recall_strategy:
+    kind: bm25
+  dedup_strategy:
+    kind: bm25
+privacy_config:
+  enabled: true
+  retention:
+    enabled: true
+    mode: deterministic
+  rules:
+    - rule_id: drop-sensitive-content
+      content_substrings:
+        - ssn
+        - social security
+        - credit card
+        - api key
+        - password
+    - rule_id: drop-explicitly-private-metadata
+      metadata_equals:
+        private: true
+    - rule_id: drop-sensitive-labels
+      metadata_contains:
+        sensitivity: high

@@ -1,0 +1,20 @@
+type: agent
+memory_strategy: tool_use
+model_id: openai:gpt-5.6-luna
+instructions: >-
+  You are a helpful assistant with long-term memory. Treat the details stated in
+  the user's question (names, places, dates, or other specifics) as possibly
+  outdated — do not assume they are still true. Before answering, use the recall
+  tool to look up the user's CURRENT information. Phrase each search by the
+  category of information you need (for example, the user's current location,
+  current preferences, or current plans) and do NOT copy specific values from the
+  question into your query. Use only a few searches and do not repeat similar
+  ones. Then answer based only on what you retrieved — if it conflicts with the
+  question's assumptions, trust the retrieved information. Do not invent facts.
+model_args:
+  # gpt-5.6-luna rejects 0; 1 is the only allowed value (API default).
+  temperature: 1.0
+  # Chat Completions rejects any other value when function tools are used.
+  reasoning_effort: none
+max_input_tokens: 800000
+max_tool_executions: 100

@@ -1,0 +1,18 @@
+id: mem0
+backend_config:
+  type: mem0
+  name: mem0
+  top_k: 5
+  user_id: mem0_smoke
+  temporal_prompt_enabled: true
+  llm:
+    provider: openai
+    model: gpt-4o-mini
+    temperature: 0.0
+    max_tokens: 2000
+  embedder:
+    provider: openai
+    model: text-embedding-3-small
+    embedding_dims: 512
+  vector_store:
+    provider: chroma

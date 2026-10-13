@@ -1,0 +1,4 @@
+id: no_memory
+backend_config:
+  type: no_memory
+  name: no_memory

@@ -1,0 +1,6 @@
+run_name: milamem_consolidation_off_stale
+experiments:
+  - name: gpt56_luna_milamem_consolidation_off_stale
+    agent_config_file: milamem_ablations/stale_deterministic.yaml
+    memory_system_config_file: milamem_ablations/consolidation_off.yaml
+    benchmark_config_file: milamem_ablations/stale.yaml

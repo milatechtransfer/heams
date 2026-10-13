@@ -1,0 +1,10 @@
+run_name: evomemory_single_turn_medium
+experiments:
+  - name: gpt56_luna_milamem_evomemory_single_turn_deterministic
+    agent_config_file: testing/evomemory_gpt56_luna_deterministic.yaml
+    memory_system_config_file: campaigns/milamem.yaml
+    benchmark_config_file: testing/evomemory_single_turn_medium.yaml
+  - name: gpt56_luna_milamem_evomemory_single_turn_tool_use
+    agent_config_file: testing/evomemory_gpt56_luna_tool_use.yaml
+    memory_system_config_file: campaigns/milamem.yaml
+    benchmark_config_file: testing/evomemory_single_turn_medium.yaml

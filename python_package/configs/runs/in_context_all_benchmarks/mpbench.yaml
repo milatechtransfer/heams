@@ -1,0 +1,6 @@
+run_name: in_context_all_benchmarks_mpbench
+experiments:
+  - name: gpt56_luna_in_context_mpbench
+    agent_config_file: campaigns/mpbench.yaml
+    memory_system_config_file: campaigns/in_context.yaml
+    benchmark_config_file: full_campaign/mpbench.yaml

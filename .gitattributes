@@ -1,0 +1,5 @@
+.github/workflows/*.lock.yml linguist-generated=true merge=ours
+
+# Left out of `git archive` exports.
+planning/ export-ignore
+project_presentation/ export-ignore

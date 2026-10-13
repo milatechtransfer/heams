@@ -1,0 +1,3 @@
+type: evomemory_single_turn
+limit: 4
+limit_stimuli: 10
