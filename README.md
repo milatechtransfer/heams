@@ -56,7 +56,7 @@ Documentation: <https://milatechtransfer.github.io/heams/>
 
 ```sh
 git clone https://github.com/milatechtransfer/heams.git
-cd mozilla-memory
+cd heams
 make setup
 cp .env_template .env   # then fill in OPENAI_API_KEY (and HF_TOKEN)
 ```

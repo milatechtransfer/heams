@@ -345,14 +345,14 @@ through `bash -lc` because tools such as `uv` are often only on a login
 shell's `PATH`.
 
 ```sh
-ssh -S "$SOCKET" <cluster> "bash -lc 'git clone https://github.com/milatechtransfer/heams.git \$SCRATCH/mozilla-memory-browse && cd \$SCRATCH/mozilla-memory-browse/python_package && uv sync --python 3.12'"
+ssh -S "$SOCKET" <cluster> "bash -lc 'git clone https://github.com/milatechtransfer/heams.git \$SCRATCH/heams-browse && cd \$SCRATCH/heams-browse/python_package && uv sync --python 3.12'"
 ```
 
 To update it later (the checkout is dedicated to the dashboard, so it can
 follow its branch even after the branch is rewritten):
 
 ```sh
-ssh -S "$SOCKET" <cluster> "bash -lc 'cd \$SCRATCH/mozilla-memory-browse && git fetch && git reset --hard @{upstream} && cd python_package && uv sync --python 3.12'"
+ssh -S "$SOCKET" <cluster> "bash -lc 'cd \$SCRATCH/heams-browse && git fetch && git reset --hard @{upstream} && cd python_package && uv sync --python 3.12'"
 ```
 
 #### 3. Start the server job
@@ -363,7 +363,7 @@ picks a free port on the node. Add `--partition` or `--account` if your
 cluster needs them.
 
 ```sh
-ssh -S "$SOCKET" <cluster> "bash -lc 'mkdir -p \$SCRATCH/mozilla-memory-browse/logs && cd \$SCRATCH/mozilla-memory-browse/python_package && sbatch --parsable --job-name=heams-browse --cpus-per-task=2 --mem=8G --time=08:00:00 --output=\$SCRATCH/mozilla-memory-browse/logs/browse-%j.out --wrap=\"exec .venv/bin/heams browse --results-dir <results-dir> --cache-dir \$SCRATCH/mozilla-memory-browse-cache --no-open --port 0\"'"
+ssh -S "$SOCKET" <cluster> "bash -lc 'mkdir -p \$SCRATCH/heams-browse/logs && cd \$SCRATCH/heams-browse/python_package && sbatch --parsable --job-name=heams-browse --cpus-per-task=2 --mem=8G --time=08:00:00 --output=\$SCRATCH/heams-browse/logs/browse-%j.out --wrap=\"exec .venv/bin/heams browse --results-dir <results-dir> --cache-dir \$SCRATCH/heams-browse-cache --no-open --port 0\"'"
 JOB=<job id printed above>
 ```
 
@@ -372,7 +372,7 @@ JOB=<job id printed above>
 Once the job is `RUNNING`, its log shows the address:
 
 ```sh
-ssh -S "$SOCKET" <cluster> "bash -lc 'squeue -j $JOB -h -o \"%T %N\"; cat \$SCRATCH/mozilla-memory-browse/logs/browse-$JOB.out'"
+ssh -S "$SOCKET" <cluster> "bash -lc 'squeue -j $JOB -h -o \"%T %N\"; cat \$SCRATCH/heams-browse/logs/browse-$JOB.out'"
 ```
 
 ```text
