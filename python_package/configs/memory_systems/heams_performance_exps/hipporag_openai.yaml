@@ -9,3 +9,6 @@ backend_config:
     embedding_model_name: text-embedding-3-small
     openie_mode: online
     temperature: 0.0
+    # Reduce malformed extraction responses on passages containing code or math.
+    response_format:
+      type: json_object

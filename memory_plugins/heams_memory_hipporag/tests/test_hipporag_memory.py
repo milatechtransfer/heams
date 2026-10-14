@@ -170,6 +170,32 @@ def test_prime_logs_and_raises_a_failed_group(hipporag, tmp_path) -> None:
     assert events[0].error == "OpenIE failed"
 
 
+def test_unparseable_openie_reply_keeps_the_chunk_and_logs_an_error(
+    monkeypatch, tmp_path
+) -> None:
+    llm = MagicMock()
+    llm.infer.return_value = ("Sorry, I cannot help with that.", {}, False)
+    openie = OpenIE(llm_model=llm)
+    hippo = MagicMock(openie=openie)
+    hippo.chunk_embedding_store.get_all_ids.side_effect = [[], ["a"]]
+    hippo.index.side_effect = lambda chunks: openie.batch_openie(
+        {"chunk-a": {"content": chunks[0].content}}
+    )
+    monkeypatch.setattr("heams_memory_hipporag.plugin.HippoRAG", MagicMock(return_value=hippo))
+    events = []
+
+    memory = _memory(tmp_path, events)
+    memory.retain("I moved to Toronto.", {"role": "user"})
+
+    [event] = events
+    assert (event.operation_type.value, event.status.value) == ("retain", "error")
+    assert event.result["write_count"] == 1
+    assert "ner failed for chunk-a" in event.error
+    assert "triple_extraction failed for chunk-a" in event.error
+    assert "Sorry, I cannot help with that." in event.error
+    assert memory._openie_failures == []
+
+
 def test_retain_counts_only_new_passages(hipporag, tmp_path) -> None:
     hipporag.chunk_embedding_store.get_all_ids.side_effect = [[], ["a"], ["a"], ["a"]]
     events = []
