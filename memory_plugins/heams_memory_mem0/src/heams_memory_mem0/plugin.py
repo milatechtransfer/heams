@@ -11,10 +11,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Literal, Self
 
+import tiktoken
 import tqdm
-from mem0 import Memory
-from pydantic import BaseModel, ConfigDict, Field
-
 from heams.memory_systems.api import (
     BaseMemoryConfig,
     BaseMemorySystem,
@@ -24,6 +22,36 @@ from heams.memory_systems.api import (
     MemoryPlugin,
     MemoryRuntimeContext,
 )
+from mem0 import Memory
+from mem0.embeddings.openai import OpenAIEmbedding
+from pydantic import BaseModel, ConfigDict, Field
+
+# text-embedding-3-* per-input cap and tokenizer, as in MilaMem and HippoRAG.
+_MAX_EMBED_INPUT_TOKENS = 8191
+_EMBED_TOKENIZER = "cl100k_base"
+
+
+def _truncate_embedding_inputs(model: OpenAIEmbedding) -> None:
+    """Cap embedding inputs without changing the content passed to Mem0."""
+    encoding = tiktoken.get_encoding(_EMBED_TOKENIZER)
+    embed, embed_batch = model.embed, model.embed_batch
+
+    def truncate(text: str) -> str:
+        text = text.replace("\n", " ")
+        tokens = encoding.encode_ordinary(text)
+        if len(tokens) <= _MAX_EMBED_INPUT_TOKENS:
+            return text
+        return encoding.decode(tokens[:_MAX_EMBED_INPUT_TOKENS])
+
+    def truncating_embed(text: str, memory_action: Any = None) -> Any:
+        return embed(truncate(text), memory_action)
+
+    def truncating_embed_batch(texts: list[str], memory_action: Any = "add") -> Any:
+        return embed_batch([truncate(text) for text in texts], memory_action)
+
+    # Only this instance is wrapped; upstream methods are not typed as writable.
+    model.embed = truncating_embed  # ty: ignore[invalid-assignment]
+    model.embed_batch = truncating_embed_batch  # ty: ignore[invalid-assignment]
 
 
 def _mem0_write_count(raw_result: Any) -> int:
@@ -465,6 +493,8 @@ class Mem0MemorySystem(BaseMemorySystem):
             self.storage_dir / f"history_{uuid.uuid4().hex}.db"
         )
         self._memory = Memory.from_config(mem0_config)
+        if isinstance(self._memory.embedding_model, OpenAIEmbedding):
+            _truncate_embedding_inputs(self._memory.embedding_model)
 
     def close(self) -> None:
         memory = self._memory
