@@ -41,15 +41,21 @@ From the project root:
     it empty if you are already logged in with `hf auth login`. Either way, the
     account must have accepted the GPQA terms.
 
-4. List the memory systems the framework has discovered, both built-in ones and
+4. Move into `python_package/`. The remaining steps run from there:
+
+    ```sh
+    cd python_package
+    ```
+
+5. List the memory systems the framework has discovered, both built-in ones and
     installed plugins. Each name is a `type` you can use in a memory-system
     config:
 
     ```sh
-    cd python_package && make memory-list
+    make memory-list
     ```
 
-5. Run the benchmark smoke tests (one small scenario per benchmark, with
+6. Run the benchmark smoke tests (one small scenario per benchmark, with
     in-context memory). The target also writes a `report.md` for each
     experiment under `python_package/results/smoke_test_benchmark/`:
 
@@ -57,7 +63,7 @@ From the project root:
     make run-smoke-benchmark
     ```
 
-6. Explore the results in the local [results browser](results-browser.md):
+7. Explore the results in the local [results browser](results-browser.md):
 
     ```sh
     make browse RESULTS_DIR=results/smoke_test_benchmark
