@@ -465,7 +465,15 @@ privacy_config:
   | `consolidation.max_pending_per_run` | `50` | Maximum pending IDs processed in one pass; comparisons still include the active store |
   | `consolidation.similarity_threshold` | `0.85` | Cosine similarity cutoff for clustering active canonical records before LLM judgment |
   | `consolidation.llm_model` | `openai:gpt-4o-mini` | any_llm model id used to judge each cluster |
+  | `consolidation.cluster_system_prompt` | Built-in cluster judge prompt | System prompt shared by cluster consolidation and retain-time reconciliation |
+  | `consolidation.anchor_system_prompt` | Built-in anchor judge prompt | System prompt used by anchor-mode consolidation |
   | `consolidation.max_cluster_size` | `8` | Cap on records judged per LLM call; larger clusters are split into chunks |
+
+  The campaign preset includes both system prompts explicitly. Omitting either
+  field preserves the built-in prompt; overrides change only the system message,
+  not the user-message format or structured verdict schema. Delete system prompts
+  are configured separately under `delete_strategy.planning.system_prompt` and
+  `delete_strategy.top_k_llm.system_prompt`.
 
   **Delete configuration.**
 

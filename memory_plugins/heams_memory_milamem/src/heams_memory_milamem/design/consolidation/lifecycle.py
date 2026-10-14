@@ -38,9 +38,11 @@ class ConsolidationRuntime(Protocol):
     ) -> None: ...
 
 
-def _judge_anchor_or_none(model: str, anchor: Any, candidates: list) -> Any:
+def _judge_anchor_or_none(
+    config: consolidation.ConsolidationConfig, anchor: Any, candidates: list
+) -> Any:
     try:
-        return consolidation.judge_anchor(model, anchor, candidates)
+        return consolidation.judge_anchor(config, anchor, candidates)
     except Exception:
         # Fail open: the anchor stays pending for the next pass.
         return None
@@ -117,7 +119,7 @@ class ConsolidationLifecycle:
                 anchor_verdicts = list(
                     pool.map(
                         lambda group: _judge_anchor_or_none(
-                            config.llm_model, group[0], group[1]
+                            config, group[0], group[1]
                         ),
                         anchor_groups,
                     )
@@ -159,9 +161,7 @@ class ConsolidationLifecycle:
                     continue
 
                 try:
-                    verdict = consolidation.judge_cluster(
-                        runtime.config.consolidation.llm_model, chunk
-                    )
+                    verdict = consolidation.judge_cluster(config, chunk)
                 except Exception:
                     skipped_cluster_count += 1
                     retry_pending_ids.update(

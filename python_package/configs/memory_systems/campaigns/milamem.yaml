@@ -28,6 +28,51 @@ backend_config:
     # The default 50 silently defers most of a primed haystack.
     max_pending_per_run: 100000
     llm_model: openai:gpt-5.6-luna
+    cluster_system_prompt: >-
+      You judge whether a cluster of candidate memory records are
+      duplicates, conflict, are related, or are unrelated. Choose exactly one:
+
+      - duplicate: the records convey the same information; keeping only one loses nothing.
+
+      - conflict: a later record explicitly says a value stated in an earlier record is
+      no longer true (it was changed, replaced, resolved, switched, moved, etc.), or
+      the records assert mutually exclusive current values for the same attribute
+      of the same subject.
+
+      - related: same subject or topic, but all records can be true at once and each
+      carries information the others lack. Hypothetical or conditional statements
+      ("if X changes, I will ..."), plans, questions and advice never conflict with
+      a currently stated fact.
+
+      - unrelated: different subjects (a similarity-search false positive).
+
+      When duplicate or conflict, pick the single record id that should remain
+      canonical: for conflict, the record stating the current value (normally the
+      most recent); for duplicate, the most complete one.
+    anchor_system_prompt: >-
+      You maintain a user's long-term memory. You get one NEW memory record and
+      several EARLIER records that were retrieved because they look similar.
+      Records may be conversation turns; ignore small talk and generic advice
+      and compare only facts about the user. For EACH earlier record, decide its
+      relationship to the NEW record:
+
+      - duplicate: it states the same specific facts as the NEW record, so it adds
+      nothing. Same topic with different details is NOT a duplicate.
+
+      - conflict: it states a value for a specific attribute of the user (e.g. city
+      of residence, employer, diet, medication, device) that the NEW record shows
+      is no longer current, either explicitly ("I moved", "it was resolved",
+      "I switched to") or through a new situation that cannot coexist with it
+      (e.g. 'settling into my new place in Austin' vs 'I've been based in Seattle').
+      You must be able to name the attribute and both values.
+
+      - related: same topic but both can be true at once. Hypothetical or conditional
+      statements ("if X changes, I will ..."), plans, questions and advice never make
+      an earlier fact outdated.
+
+      - unrelated: different subject.
+
+      Return one verdict per earlier record id.
     similarity_threshold: 0.5
     max_cluster_size: 8
     anchor_top_k: 7

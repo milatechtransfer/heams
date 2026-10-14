@@ -40,6 +40,60 @@ class ConsolidationConfig(BaseConsolidationConfig):
         default="openai:gpt-4o-mini",
         description="any_llm model id used to judge clustered canonical records.",
     )
+    cluster_system_prompt: str = Field(
+        default=(
+            "You judge whether a cluster of candidate memory records are "
+            "duplicates, conflict, are related, or are unrelated. Choose "
+            "exactly one:\n"
+            "- duplicate: the records convey the same information; "
+            "keeping only one loses nothing.\n"
+            "- conflict: a later record explicitly says a value stated in "
+            "an earlier record is no longer true (it was changed, "
+            "replaced, resolved, switched, moved, etc.), or the records "
+            "assert mutually exclusive current values for the same "
+            "attribute of the same subject.\n"
+            "- related: same subject or topic, but all records can be "
+            "true at once and each carries information the others lack. "
+            'Hypothetical or conditional statements ("if X changes, I '
+            'will ..."), plans, questions and advice never conflict with '
+            "a currently stated fact.\n"
+            "- unrelated: different subjects (a similarity-search false "
+            "positive).\n"
+            "When duplicate or conflict, pick the single record id that "
+            "should remain canonical: for conflict, the record stating "
+            "the current value (normally the most recent); for "
+            "duplicate, the most complete one."
+        ),
+        description="System prompt for cluster consolidation and retain-time reconciliation.",
+    )
+    anchor_system_prompt: str = Field(
+        default=(
+            "You maintain a user's long-term memory. You get one NEW "
+            "memory record and several EARLIER records that were "
+            "retrieved because they look similar. Records may be "
+            "conversation turns; ignore small talk and generic advice "
+            "and compare only facts about the user. For EACH earlier "
+            "record, decide its relationship to the NEW record:\n"
+            "- duplicate: it states the same specific facts as the NEW "
+            "record, so it adds nothing. Same topic with different "
+            "details is NOT a duplicate.\n"
+            "- conflict: it states a value for a specific attribute of "
+            "the user (e.g. city of residence, employer, diet, "
+            "medication, device) that the NEW record shows is no longer "
+            'current, either explicitly ("I moved", "it was '
+            'resolved", "I switched to") or through a new situation '
+            "that cannot coexist with it (e.g. 'settling into my new "
+            "place in Austin' vs 'I've been based in Seattle'). You must "
+            "be able to name the attribute and both values.\n"
+            "- related: same topic but both can be true at once. "
+            'Hypothetical or conditional statements ("if X changes, I '
+            'will ..."), plans, questions and advice never make an '
+            "earlier fact outdated.\n"
+            "- unrelated: different subject.\n"
+            "Return one verdict per earlier record id."
+        ),
+        description="System prompt for anchor-mode consolidation.",
+    )
     similarity_threshold: float = Field(
         default=0.85,
         ge=0.0,
@@ -251,7 +305,7 @@ def chunk_cluster(
 
 
 def judge_cluster(
-    model: str,
+    config: ConsolidationConfig,
     records: list[CanonicalMemoryRecord],
 ) -> ConsolidationVerdict:
     """The isolated LLM call — single mockable seam for tests, mirroring
@@ -266,29 +320,7 @@ def judge_cluster(
     messages = [
         {
             "role": "system",
-            "content": (
-                "You judge whether a cluster of candidate memory records are "
-                "duplicates, conflict, are related, or are unrelated. Choose "
-                "exactly one:\n"
-                "- duplicate: the records convey the same information; "
-                "keeping only one loses nothing.\n"
-                "- conflict: a later record explicitly says a value stated in "
-                "an earlier record is no longer true (it was changed, "
-                "replaced, resolved, switched, moved, etc.), or the records "
-                "assert mutually exclusive current values for the same "
-                "attribute of the same subject.\n"
-                "- related: same subject or topic, but all records can be "
-                "true at once and each carries information the others lack. "
-                'Hypothetical or conditional statements ("if X changes, I '
-                'will ..."), plans, questions and advice never conflict with '
-                "a currently stated fact.\n"
-                "- unrelated: different subjects (a similarity-search false "
-                "positive).\n"
-                "When duplicate or conflict, pick the single record id that "
-                "should remain canonical: for conflict, the record stating "
-                "the current value (normally the most recent); for "
-                "duplicate, the most complete one."
-            ),
+            "content": config.cluster_system_prompt,
         },
         {
             "role": "user",
@@ -303,7 +335,7 @@ def judge_cluster(
     # same hazard as `embed_texts` in recall_strategies.py.
     recall_strategies._ensure_thread_event_loop()
     response = any_llm.completion(
-        model=model,
+        model=config.llm_model,
         messages=messages,
         response_format=ConsolidationVerdict,
         allow_running_loop=True,
@@ -313,7 +345,7 @@ def judge_cluster(
 
 
 def judge_anchor(
-    model: str,
+    config: ConsolidationConfig,
     anchor: CanonicalMemoryRecord,
     candidates: list[CanonicalMemoryRecord],
 ) -> AnchorVerdict:
@@ -326,31 +358,7 @@ def judge_anchor(
     messages = [
         {
             "role": "system",
-            "content": (
-                "You maintain a user's long-term memory. You get one NEW "
-                "memory record and several EARLIER records that were "
-                "retrieved because they look similar. Records may be "
-                "conversation turns; ignore small talk and generic advice "
-                "and compare only facts about the user. For EACH earlier "
-                "record, decide its relationship to the NEW record:\n"
-                "- duplicate: it states the same specific facts as the NEW "
-                "record, so it adds nothing. Same topic with different "
-                "details is NOT a duplicate.\n"
-                "- conflict: it states a value for a specific attribute of "
-                "the user (e.g. city of residence, employer, diet, "
-                "medication, device) that the NEW record shows is no longer "
-                'current, either explicitly ("I moved", "it was '
-                'resolved", "I switched to") or through a new situation '
-                "that cannot coexist with it (e.g. 'settling into my new "
-                "place in Austin' vs 'I've been based in Seattle'). You must "
-                "be able to name the attribute and both values.\n"
-                "- related: same topic but both can be true at once. "
-                'Hypothetical or conditional statements ("if X changes, I '
-                'will ..."), plans, questions and advice never make an '
-                "earlier fact outdated.\n"
-                "- unrelated: different subject.\n"
-                "Return one verdict per earlier record id."
-            ),
+            "content": config.anchor_system_prompt,
         },
         {
             "role": "user",
@@ -361,7 +369,7 @@ def judge_anchor(
     ]
     recall_strategies._ensure_thread_event_loop()
     response = any_llm.completion(
-        model=model,
+        model=config.llm_model,
         messages=messages,
         response_format=AnchorVerdict,
         allow_running_loop=True,
