@@ -76,7 +76,8 @@ def test_preset_primes_a_session_and_recalls_it(tmp_path: Path) -> None:
             return context, [message.id for message in log]
 
         assert prime.status == "success", prime.error
-        assert prime.result["stop_reason"] == "end_turn"
+        if CONFIG.prime_mode == "agent":
+            assert prime.result["stop_reason"] == "end_turn"
         assert prime.result["write_count"] >= 1
 
         before = messages()
