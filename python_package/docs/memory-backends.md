@@ -619,6 +619,10 @@ privacy_config:
   Install `heams-memory-mem0` before validating a component config with
   `type: mem0`.
 
+  OpenAI embedding inputs are normalized to single-line text and capped at 8191
+  tokens using `cl100k_base`, for both individual and batch calls. This limits
+  embedding requests, not the memory content passed to Mem0.
+
   The plugin keeps the backend configuration helpers separate from the runtime
   implementation. Each nested section accepts its common fields below and
   forwards additional provider-specific fields to Mem0:
@@ -706,9 +710,12 @@ privacy_config:
     or one passage per entry when the benchmark sets no group. A metadata key
     that differs across a group's turns (such as `dia_id`) becomes a list. Each
     passage is indexed and logged as one priming `retain` event, like Mem0's
-    groups; a failed passage is logged as an error and fails priming.
+    groups. Extraction failures reported by OpenIE retain the passage without
+    the failed entities/triples, log an error event, and allow priming to continue.
+    Other indexing exceptions are logged and fail priming.
   - `retain` indexes one passage; `write_count` is 0 when the exact text is
-    already stored.
+    already stored. OpenIE extraction failures appear in error events even when
+    the passage was stored; the returned retain message is unchanged.
   - `recall` returns passages with their metadata; the event also records
     `scores` and `graph_seeds` (empty means HippoRAG fell back to dense passage
     retrieval).
@@ -721,6 +728,8 @@ privacy_config:
   `python_package/pyproject.toml` overrides those pins with the versions the
   environment already uses; no other package's version changes. HippoRAG's
   OpenAI clients read `OPENAI_API_KEY`.
+  The performance preset requests JSON responses to reduce malformed extraction
+  output; extraction failures remain visible in memory-operation events.
 === "letta (external plugin)"
 
   [Letta](https://github.com/letta-ai/letta/tree/0.16.8) 0.16.8, the last Python
