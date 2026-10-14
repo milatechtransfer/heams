@@ -70,15 +70,10 @@ from .temporal import parse_temporal_timestamp
 STATE_SCHEMA_VERSION = 1
 
 # Gates whether a retain-time top-candidate match is worth an LLM judge
-# call (semantic dedup_strategy only). Calibrated against real
-# text-embedding-3-small output, not a guess: 0.75
-# (the original value) never fired on real conflicting sentences with any
-# natural surrounding detail (e.g. "Alice lives in Boston and works as a
-# nurse" vs "Alice moved to Chicago for a new job" scored 0.54) — it only
-# ever cleared for near-minimal, few-words-different sentences. 0.5 clears
-# real conflicts while staying well above real unrelated-content scores
-# (~0.15 in the same probe).
-RETAIN_JUDGE_SIMILARITY_FLOOR = 0.5
+# call (semantic dedup_strategy only). Kept high so retain-time only judges
+# near-duplicates: on EE chat turns with text-embedding-3-small, 0.5 sent
+# ~78% of writes to the judge (median top-1 cosine 0.69); 0.85 sends ~5%.
+RETAIN_JUDGE_SIMILARITY_FLOOR = 0.85
 
 
 class TemporalMetadataConfig(BaseModel):
@@ -142,6 +137,13 @@ class MilaMemConfig(BaseMemoryConfig):
         description=(
             "Config for consolidate()'s clustering + LLM-judged backstop; "
             "embeds via dedup_strategy.embed_model."
+        ),
+    )
+    recall_redirect_superseded: bool = Field(
+        default=False,
+        description=(
+            "Rank superseded records too, and return each superseded hit's "
+            "active successor (via superseded_by) in its place."
         ),
     )
 
@@ -418,7 +420,7 @@ class MilaMemMemorySystem(BaseMemorySystem):
         top_k: int = 0,
     ) -> MemoryOperationResult:
         # Recall reads the canonical (deduplicated) store, not raw; excludes
-        # superseded records.
+        # superseded records unless recall_redirect_superseded is set.
         outcome = self._recall_lifecycle.run(
             self,
             query,

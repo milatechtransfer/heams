@@ -613,7 +613,7 @@ def test_repeated_public_delete_is_idempotent_and_preserves_related_record(
     second = memory.delete("Forget jasmine tea.")
 
     assert first == "Logically deleted 1 canonical memory record(s)."
-    assert second == "Delete request was ambiguous; no canonical memory was deleted."
+    assert second == "Delete request did not match any canonical memory."
     assert Path(memory.config.canonical_store_path).read_bytes() == after_first
     final_records = {
         record.id: record for record in memory._load_canonical_store().records
@@ -629,7 +629,7 @@ def test_repeated_public_delete_is_idempotent_and_preserves_related_record(
     assert llm_calls == 2
 
 
-def test_public_delete_enforces_max_delete_count_without_write(
+def test_public_delete_trims_selection_to_max_delete_count(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -637,8 +637,6 @@ def test_public_delete_enforces_max_delete_count_without_write(
     memory.retain("The user likes jasmine tea.")
     memory.retain("The user likes dark coffee.")
     selected_ids = [record.id for record in memory._load_canonical_store().records]
-    canonical_path = Path(memory.config.canonical_store_path)
-    before = canonical_path.read_bytes()
     monkeypatch.setattr(
         delete_strategies_module,
         "request_delete_decision",
@@ -651,5 +649,8 @@ def test_public_delete_enforces_max_delete_count_without_write(
 
     result = memory.delete("Forget both preferences.")
 
-    assert result == "Delete request was ambiguous; no canonical memory was deleted."
-    assert canonical_path.read_bytes() == before
+    assert result == "Logically deleted 1 canonical memory record(s)."
+    statuses = sorted(
+        record.status for record in memory._load_canonical_store().records
+    )
+    assert statuses == ["active", "deleted"]

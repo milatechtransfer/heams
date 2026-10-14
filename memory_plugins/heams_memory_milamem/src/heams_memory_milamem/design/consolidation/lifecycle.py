@@ -1,10 +1,15 @@
 """Orchestration for the canonical consolidation lifecycle."""
 
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Any, Protocol
 
 from ... import consolidation
-from ..canonical_helpers import _active_canonical_records, _apply_verdict
+from ..canonical_helpers import (
+    _active_canonical_records,
+    _apply_anchor_verdict,
+    _apply_verdict,
+)
 from ..storage_type.store_state import CanonicalMemoryStoreState
 
 
@@ -31,6 +36,14 @@ class ConsolidationRuntime(Protocol):
     def _save_canonical_store(
         self, canonical_store: CanonicalMemoryStoreState
     ) -> None: ...
+
+
+def _judge_anchor_or_none(model: str, anchor: Any, candidates: list) -> Any:
+    try:
+        return consolidation.judge_anchor(model, anchor, candidates)
+    except Exception:
+        # Fail open: the anchor stays pending for the next pass.
+        return None
 
 
 class ConsolidationLifecycle:
@@ -74,15 +87,64 @@ class ConsolidationLifecycle:
         record_index_by_id = {record.id: index for index, record in enumerate(records)}
 
         embed_model = runtime.config.dedup_strategy.embed_model
-        clusters = consolidation.cluster_by_similarity(
-            active_records,
-            embed_model=embed_model,
-            similarity_threshold=runtime.config.consolidation.similarity_threshold,
-            embedding_cache=runtime._embedding_cache,
-            entry_key_fn=runtime._entry_cache_key_for(embed_model),
-            pending_ids=pending_ids,
-        )
+        config = runtime.config.consolidation
+        clusters: list = []
+        anchor_groups: list = []
+        if config.anchor_top_k is not None:
+            anchor_groups = consolidation.anchor_candidates(
+                active_records,
+                embed_model=embed_model,
+                similarity_threshold=config.similarity_threshold,
+                embedding_cache=runtime._embedding_cache,
+                entry_key_fn=runtime._entry_cache_key_for(embed_model),
+                pending_ids=pending_ids,
+                top_k=config.anchor_top_k,
+                anchor_roles=config.anchor_roles,
+            )
+        else:
+            clusters = consolidation.cluster_by_similarity(
+                active_records,
+                embed_model=embed_model,
+                similarity_threshold=config.similarity_threshold,
+                embedding_cache=runtime._embedding_cache,
+                entry_key_fn=runtime._entry_cache_key_for(embed_model),
+                pending_ids=pending_ids,
+            )
         runtime._save_embedding_cache()
+
+        if anchor_groups:
+            with ThreadPoolExecutor(max_workers=config.judge_concurrency) as pool:
+                anchor_verdicts = list(
+                    pool.map(
+                        lambda group: _judge_anchor_or_none(
+                            config.llm_model, group[0], group[1]
+                        ),
+                        anchor_groups,
+                    )
+                )
+            # Applied in sequence order so older anchors resolve first.
+            for (anchor, candidates), verdict in zip(anchor_groups, anchor_verdicts):
+                if verdict is None:
+                    skipped_cluster_count += 1
+                    retry_pending_ids.add(anchor.id)
+                    continue
+                superseded = _apply_anchor_verdict(
+                    anchor,
+                    candidates,
+                    verdict,
+                    store_records=records,
+                    record_index_by_id=record_index_by_id,
+                )
+                if not superseded:
+                    skipped_cluster_count += 1
+                    continue
+                changed_count += len(superseded)
+                deduplicated_count += sum(
+                    reason == "deduplicated" for reason in superseded.values()
+                )
+                conflict_resolved_count += sum(
+                    reason == "conflict_resolved" for reason in superseded.values()
+                )
 
         for cluster in clusters:
             if len(cluster) <= 1:
@@ -115,7 +177,7 @@ class ConsolidationLifecycle:
                 )
                 if outcome.reason is None:
                     skipped_cluster_count += 1
-                    if verdict.relationship != "unrelated":
+                    if verdict.relationship not in ("related", "unrelated"):
                         retry_pending_ids.update(
                             record.id for record in chunk if record.id in pending_ids
                         )

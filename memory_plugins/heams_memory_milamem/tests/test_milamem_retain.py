@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from heams_memory_milamem import consolidation as consolidation_module
+from heams_memory_milamem import milamem as milamem_module
 from heams_memory_milamem import recall_strategies as recall_strategies_module
 from heams_memory_milamem.milamem import (
     MilaMemMemorySystem,
@@ -76,6 +77,12 @@ def _stub_judge(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         consolidation_module, "judge_cluster", _fake_judge_duplicate_or_conflict
     )
+
+
+@pytest.fixture(autouse=True)
+def _low_judge_floor(monkeypatch: pytest.MonkeyPatch) -> None:
+    # The hash-based fake embeddings score same-subject pairs below the 0.85 default.
+    monkeypatch.setattr(milamem_module, "RETAIN_JUDGE_SIMILARITY_FLOOR", 0.5)
 
 
 @pytest.fixture()
@@ -187,6 +194,21 @@ def test_retain_resolves_conflict_supersedes_old_canonical_record(
     raw = _raw_records(memory)
     assert len(raw) == 2
     assert all(r["status"] == "active" for r in raw)
+
+
+def test_retain_related_verdict_keeps_both_records(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def _judge_related(model: str, records: list) -> ConsolidationVerdict:
+        return ConsolidationVerdict(relationship="related", canonical_id=records[-1].id)
+
+    monkeypatch.setattr(consolidation_module, "judge_cluster", _judge_related)
+    memory = _semantic_memory(tmp_path)
+    memory.retain("Alice is in Paris.")
+    memory.retain("Alice is in London.")
+
+    canonical = _canonical_records(memory)
+    assert [r["status"] for r in canonical] == ["active", "active"]
 
 
 def test_retain_does_not_resolve_conflict_ranked_outside_dedup_candidates(
