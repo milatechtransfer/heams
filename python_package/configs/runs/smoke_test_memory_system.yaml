@@ -16,3 +16,11 @@ experiments:
     agent_config_file: campaigns/locomo.yaml
     memory_system_config_file: campaigns/mem0.yaml
     benchmark_config_file: smoke_campaign/locomo.yaml
+  - name: gpt56_luna_hipporag_locomo
+    agent_config_file: campaigns/locomo.yaml
+    memory_system_config_file: campaigns/hipporag_openai.yaml
+    benchmark_config_file: smoke_campaign/locomo.yaml
+  - name: gpt56_luna_example_in_memory_locomo
+    agent_config_file: campaigns/locomo.yaml
+    memory_system_config_file: examples/example_in_memory.yaml
+    benchmark_config_file: smoke_campaign/locomo.yaml

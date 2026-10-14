@@ -48,9 +48,10 @@ Documentation: <https://milatechtransfer.github.io/mozilla-memory/>
 - git, make, and [uv](https://docs.astral.sh/uv/); `make setup` installs
   Python 3.12 through uv if needed (the package requires Python ≥ 3.12.6)
 - An `OPENAI_API_KEY`: the bundled agents and LLM judges use OpenAI models
-- For Evo-Memory (including `make run-smoke`), an `HF_TOKEN` from a Hugging Face
-  account that has accepted the terms of the gated
-  [GPQA](https://huggingface.co/datasets/Idavidrein/gpqa) dataset
+- For Evo-Memory (including `make run-smoke`), access to the gated
+  [GPQA](https://huggingface.co/datasets/Idavidrein/gpqa) dataset from a Hugging
+  Face account that has accepted its terms: set `HF_TOKEN`, or log in with
+  `hf auth login`
 
 ## Install
 

@@ -260,7 +260,7 @@ exercise delete or consolidate, so cover those in your own tests.
 To run your plugin on a benchmark, copy
 `configs/runs/examples/compare_memory_systems.yaml`, point one experiment's
 `memory_system_config_file` at your YAML, and run it as described in
-[Your first run](getting-started.md#your-first-run).
+[Running experiments](getting-started.md#running-experiments).
 
 For a complete, working version of steps 1 to 6, including a real
 `_delete_impl` and `_consolidate_impl`, read
