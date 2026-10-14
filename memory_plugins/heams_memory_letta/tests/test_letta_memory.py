@@ -612,7 +612,7 @@ def test_insert_mode_splits_long_groups_and_preserves_content(
 @pytest.mark.parametrize(
     ("header", "body"),
     [
-        ("Conversation on today.", "\u4f60\u597d\U0001f642 caf\u00e9 " * 30),
+        ("Conversation on today.", "\u4f60\u597d\U0001f642 calf\u00e9 " * 30),
         ("", "<|endoftext|>" * 30),
     ],
 )
