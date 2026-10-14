@@ -78,7 +78,7 @@ Each experiment's folder under `results/quickstart/` holds the raw results
 (`runs.jsonl`) and a readable `report.md`. To compare memory systems, run
 `configs/runs/examples/compare_memory_systems.yaml` the same way. `make run-smoke`
 runs a small smoke check of every benchmark except Retention policy (which has
-its own `retention_policy_smoke` config), plus four memory systems on LoCoMo.
+its own `retention_policy_smoke` config), plus six memory configurations on LoCoMo.
 
 To explore results across runs in a local web GUI, run
 `uv run heams browse --results-dir results` (see

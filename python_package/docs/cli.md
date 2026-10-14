@@ -89,8 +89,8 @@ relative YAML paths under the matching subdirectory; nested paths such as
 The default `smoke_test_benchmark.yaml` contains one in-context experiment per
 smoke-scale benchmark, except Retention policy (run
 `retention_policy_smoke.yaml` for that). The complementary
-`smoke_test_memory_system.yaml` contains four one-scenario LoCoMo experiments,
-one for each campaign memory system. A representative benchmark smoke entry is:
+`smoke_test_memory_system.yaml` contains six one-scenario LoCoMo experiments:
+no-memory, in-context, MilaMem, Mem0, HippoRAG, and the example in-memory system. A representative benchmark smoke entry is:
 
 ```yaml
 run_name: smoke_test_benchmark
