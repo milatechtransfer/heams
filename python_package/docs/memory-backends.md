@@ -219,7 +219,7 @@ Selected component presets:
 | `configs/memory_systems/campaigns/in_context.yaml` | `in_context` | n/a |
 | `configs/memory_systems/testing/basic_complete_memory_system.yaml` | `basic_complete_memory_system` | bm25 / bm25 |
 | `configs/memory_systems/testing/semantic_memory_system.yaml` | `basic_complete_memory_system` | semantic / semantic |
-| `configs/memory_systems/campaigns/milamem.yaml` | `milamem` | bm25 / semantic |
+| `configs/memory_systems/campaigns/milamem.yaml` | `milamem` | hybrid / semantic |
 | `configs/memory_systems/campaigns/mem0.yaml` | `mem0` | provider-defined |
 | `configs/memory_systems/campaigns/hipporag_openai.yaml` | `hipporag` | provider-defined |
 | `configs/memory_systems/campaigns/letta_openai.yaml` | `letta` | agent-defined |
