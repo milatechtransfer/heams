@@ -1,8 +1,8 @@
 # Zensical site configuration — https://zensical.org/docs/
 site_name: HEAMS
 site_description: Extensible benchmarking for agentic private memory
-site_url: https://milatechtransfer.github.io/mozilla-memory/
-repo_url: https://github.com/milatechtransfer/mozilla-memory
+site_url: https://milatechtransfer.github.io/heams/
+repo_url: https://github.com/milatechtransfer/heams
 copyright: "HEAMS: Holistic Evaluation of Agent Memory Systems"
 
 docs_dir: python_package/docs

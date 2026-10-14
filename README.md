@@ -1,5 +1,10 @@
 # HEAMS: Holistic Evaluation of Agent Memory Systems
 
+[![Tests](https://github.com/milatechtransfer/heams/actions/workflows/test.yml/badge.svg)](https://github.com/milatechtransfer/heams/actions/workflows/test.yml)
+[![Check](https://github.com/milatechtransfer/heams/actions/workflows/check.yml/badge.svg)](https://github.com/milatechtransfer/heams/actions/workflows/check.yml)
+[![Docs](https://github.com/milatechtransfer/heams/actions/workflows/docs.yml/badge.svg)](https://milatechtransfer.github.io/heams/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 HEAMS is an open framework for evaluating memory systems for
 AI agents. It measures both what memory adds to an agent (recalling, updating,
 and reusing information over long interactions) and what it risks for the user
@@ -7,7 +12,7 @@ and reusing information over long interactions) and what it risks for the user
 systems, and benchmarks are declared in YAML, so comparing memory systems is a
 matter of listing more experiments in a run config.
 
-Documentation: <https://milatechtransfer.github.io/mozilla-memory/>
+Documentation: <https://milatechtransfer.github.io/heams/>
 
 ## What's included
 
@@ -56,8 +61,8 @@ Documentation: <https://milatechtransfer.github.io/mozilla-memory/>
 ## Install
 
 ```sh
-git clone https://github.com/milatechtransfer/mozilla-memory.git
-cd mozilla-memory
+git clone https://github.com/milatechtransfer/heams.git
+cd heams
 make setup
 cp .env_template .env   # then fill in OPENAI_API_KEY (and HF_TOKEN)
 ```
@@ -97,7 +102,9 @@ Next: [Getting started](python_package/docs/getting-started.md),
 ## Citing
 
 A paper describing the framework is in preparation. Until it is published,
-please cite this repository if you use the framework in your research.
+please cite this repository if you use the framework in your research: use the
+"Cite this repository" button on GitHub, or the metadata in
+[`CITATION.cff`](CITATION.cff).
 
 <!-- Replace the paragraph above with the paper's BibTeX once it is published. -->
 
@@ -141,7 +148,7 @@ Naghshzan, and Arsène Fansi Tchango.
 **Contributors:** Marzia Nouri (Contextual Integrity and Retention policy
 benchmarks) and Mehar Bhatia (STALE and Erasability & Editability benchmarks).
 See the
-[contributors page](https://github.com/milatechtransfer/mozilla-memory/graphs/contributors)
+[contributors page](https://github.com/milatechtransfer/heams/graphs/contributors)
 for everyone who has contributed code.
 
 ## Acknowledgements
@@ -155,6 +162,6 @@ work.
 ## Contact
 
 For questions, bug reports, and research collaborations, please open an
-[issue on GitHub](https://github.com/milatechtransfer/mozilla-memory/issues).
+[issue on GitHub](https://github.com/milatechtransfer/heams/issues).
 To contribute code, a benchmark, or a memory system, see
 [CONTRIBUTING.md](CONTRIBUTING.md).

@@ -27,6 +27,13 @@ authors = [
     { name = "Mehar Bhatia" },
 ]
 
+[project.urls]
+Homepage = "https://github.com/milatechtransfer/heams"
+Documentation = "https://milatechtransfer.github.io/heams/"
+Repository = "https://github.com/milatechtransfer/heams"
+Issues = "https://github.com/milatechtransfer/heams/issues"
+Changelog = "https://github.com/milatechtransfer/heams/blob/main/CHANGELOG.md"
+
 [project.scripts]
 heams = "heams.cli.cli:main"
 # Kept so commands and scripts written for the old name keep working.

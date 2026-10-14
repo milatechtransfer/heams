@@ -60,9 +60,9 @@ RESULTS_DIR="${BROWSE_RESULTS_DIR:-}"
 # Optional. Paths are expanded on the cluster, so `$` stays literal here.
 LOCAL_PORT="${BROWSE_LOCAL_PORT:-8767}"
 REMOTE_BASE='${SCRATCH:-$HOME}'
-REMOTE_CHECKOUT="${BROWSE_REMOTE_CHECKOUT:-$REMOTE_BASE/mozilla-memory-browse}"
-REMOTE_CACHE="${BROWSE_REMOTE_CACHE:-$REMOTE_BASE/mozilla-memory-browse-cache}"
-REPO_URL="${BROWSE_REPO_URL:-https://github.com/milatechtransfer/mozilla-memory.git}"
+REMOTE_CHECKOUT="${BROWSE_REMOTE_CHECKOUT:-$REMOTE_BASE/heams-browse}"
+REMOTE_CACHE="${BROWSE_REMOTE_CACHE:-$REMOTE_BASE/heams-browse-cache}"
+REPO_URL="${BROWSE_REPO_URL:-https://github.com/milatechtransfer/heams.git}"
 BRANCH="${BROWSE_BRANCH:-}"
 SLURM_PARTITION="${BROWSE_SLURM_PARTITION:-}"
 SLURM_ACCOUNT="${BROWSE_SLURM_ACCOUNT:-}"
