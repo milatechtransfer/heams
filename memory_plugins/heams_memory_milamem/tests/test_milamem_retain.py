@@ -10,7 +10,6 @@ from pathlib import Path
 import pytest
 
 from heams_memory_milamem import consolidation as consolidation_module
-from heams_memory_milamem import milamem as milamem_module
 from heams_memory_milamem import recall_strategies as recall_strategies_module
 from heams_memory_milamem.milamem import (
     MilaMemMemorySystem,
@@ -79,17 +78,12 @@ def _stub_judge(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
-@pytest.fixture(autouse=True)
-def _low_judge_floor(monkeypatch: pytest.MonkeyPatch) -> None:
-    # The hash-based fake embeddings score same-subject pairs below the 0.85 default.
-    monkeypatch.setattr(milamem_module, "RETAIN_JUDGE_SIMILARITY_FLOOR", 0.5)
-
-
 @pytest.fixture()
 def memory(tmp_path: Path) -> MilaMemMemorySystem:
     return MilaMemMemorySystem(
         config=MilaMemConfig(
             name="test",
+            retain_judge_similarity_floor=0.5,
             raw_store_path=str(tmp_path / "raw.json"),
             canonical_store_path=str(tmp_path / "canonical.json"),
             dedup_strategy=DedupStrategyConfig(
@@ -108,6 +102,7 @@ def _semantic_memory(tmp_path: Path, **config_kwargs) -> MilaMemMemorySystem:
     fake reliably clears that floor for same-subject conflicting content
     (e.g. "Alice is in Paris."/"Alice is in London.")."""
     config_kwargs.setdefault("name", "test-semantic")
+    config_kwargs.setdefault("retain_judge_similarity_floor", 0.5)
     config_kwargs.setdefault(
         "dedup_strategy",
         DedupStrategyConfig(
@@ -460,6 +455,7 @@ def test_semantic_dedup_default_resolves_conflict(tmp_path: Path) -> None:
     memory = MilaMemMemorySystem(
         config=MilaMemConfig(
             name="test-semantic-default",
+            retain_judge_similarity_floor=0.5,
             raw_store_path=str(tmp_path / "raw.json"),
             canonical_store_path=str(tmp_path / "canonical.json"),
         ),

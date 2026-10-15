@@ -440,10 +440,7 @@ privacy_config:
   semantic conflict resolution over the same configured window. A semantic
   candidate search is ranked first,
   and if the top-ranked candidate's cosine similarity to the incoming
-  content clears a similarity floor (`RETAIN_JUDGE_SIMILARITY_FLOOR = 0.5`,
-  a hardcoded constant, not a config field — calibrated against real
-  `text-embedding-3-small` output: 0.75 never fired on real conflicting
-  sentences with natural surrounding detail, only on near-minimal ones),
+  content meets `retain_judge_similarity_floor` (default `0.85`),
   the same LLM judge `consolidate()` uses
   (`consolidation.judge_cluster`) is called on just `[incoming, top
   candidate]` and is the sole authority on duplicate / conflict / unrelated.
@@ -454,6 +451,7 @@ privacy_config:
   |-------|---------|---------|
   | `dedup_strategy.enabled` | `true` | `false` disables exact deduplication and semantic conflict resolution; `true` enables both |
   | `dedup_strategy.kind` | `semantic` | Candidate ranker; canonical ledger requires semantic ranking when deduplication is enabled. BM25 remains available to other backends and is accepted here only while deduplication is disabled |
+  | `retain_judge_similarity_floor` | `0.85` | Minimum top-candidate cosine similarity for retain-time LLM reconciliation; independent of `consolidation.similarity_threshold` |
   | `dedup_strategy.window.days` | `None` (unbounded) | Active only when `temporal_metadata.enabled=True`; bounds exact and semantic reconciliation by `metadata.temporal_received_at` |
   | `dedup_strategy.window.turns` | `None` (unbounded) | Used when temporal metadata is disabled; bounds exact and semantic reconciliation to the N most recent active records |
 

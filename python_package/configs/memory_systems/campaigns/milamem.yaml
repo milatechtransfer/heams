@@ -8,6 +8,8 @@ backend_config:
   priming_speaker_prefix: false
   # Superseded hits are swapped for their active successor instead of dropped.
   recall_redirect_superseded: true
+  # Minimum cosine similarity for retain-time judging, separate from consolidation.
+  retain_judge_similarity_floor: 0.85
   temporal_metadata:
     enabled: true
   recall_strategy:

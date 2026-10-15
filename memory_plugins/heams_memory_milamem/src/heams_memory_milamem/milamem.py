@@ -69,13 +69,6 @@ from .temporal import parse_temporal_timestamp
 
 STATE_SCHEMA_VERSION = 1
 
-# Gates whether a retain-time top-candidate match is worth an LLM judge
-# call (semantic dedup_strategy only). Kept high so retain-time only judges
-# near-duplicates: on EE chat turns with text-embedding-3-small, 0.5 sent
-# ~78% of writes to the judge (median top-1 cosine 0.69); 0.85 sends ~5%.
-RETAIN_JUDGE_SIMILARITY_FLOOR = 0.85
-
-
 class TemporalMetadataConfig(BaseModel):
     enabled: bool = False
 
@@ -113,6 +106,15 @@ class MilaMemConfig(BaseMemoryConfig):
             "Controls retain-time duplicate and conflict reconciliation. "
             "enabled=false disables both exact and semantic reconciliation; "
             "enabled=true enables both over the configured window."
+        ),
+    )
+    retain_judge_similarity_floor: float = Field(
+        default=0.85,
+        ge=0.0,
+        le=1.0,
+        description=(
+            "Minimum top-candidate cosine similarity required for retain-time "
+            "LLM reconciliation."
         ),
     )
 
@@ -202,7 +204,7 @@ class MilaMemMemorySystem(BaseMemorySystem):
         )
         self._consolidation_lifecycle = ConsolidationLifecycle()
         self._retain_lifecycle = RetainLifecycle(
-            similarity_floor=RETAIN_JUDGE_SIMILARITY_FLOOR,
+            similarity_floor=self.config.retain_judge_similarity_floor,
         )
         # Recall, dedup, and consolidate share one cache — content embedded
         # for one is reused by the others when `embed_model` matches.
