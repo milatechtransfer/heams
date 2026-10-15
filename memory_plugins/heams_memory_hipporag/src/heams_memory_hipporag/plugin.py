@@ -230,9 +230,13 @@ class HippoRAGMemorySystem(BaseMemorySystem):
 
     def _index(self, chunk: Chunk) -> int:
         """Index one passage; returns 0 when its exact text is already stored."""
-        before = self._passage_count()
-        self._hipporag.index([chunk])
-        return self._passage_count() - before
+        try:
+            before = self._passage_count()
+            self._hipporag.index([chunk])
+            return self._passage_count() - before
+        except Exception:
+            self._openie_failures.clear()
+            raise
 
     def _retain_impl(
         self, content: str, metadata: dict[str, Any]

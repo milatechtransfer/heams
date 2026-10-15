@@ -170,6 +170,53 @@ def test_prime_logs_and_raises_a_failed_group(hipporag, tmp_path) -> None:
     assert events[0].error == "OpenIE failed"
 
 
+@pytest.mark.parametrize("operation", ["retain", "prime"])
+@pytest.mark.parametrize("failure_stage", ["index", "passage_count"])
+def test_index_failure_clears_openie_errors_before_instance_reuse(
+    hipporag, tmp_path, operation, failure_stage
+) -> None:
+    events = []
+    memory = _memory(tmp_path, events)
+    failures = memory._openie_failures
+    error = RuntimeError("Indexing failed")
+    hipporag.chunk_embedding_store.get_all_ids.return_value = []
+    if failure_stage == "passage_count":
+        hipporag.chunk_embedding_store.get_all_ids.side_effect = [[], error]
+
+    def fail_index(chunks):
+        failures.append("ner failed for chunk-a: invalid reply")
+        if failure_stage == "index":
+            raise error
+
+    hipporag.index.side_effect = fail_index
+
+    if operation == "prime":
+        with pytest.raises(RuntimeError, match="Indexing failed") as exc_info:
+            memory.prime_memory_entries([MemoryEntry(content="First passage.")])
+        assert exc_info.value is error
+    else:
+        assert memory.retain("First passage.") == (
+            "Failed to retain memory: Indexing failed"
+        )
+
+    assert memory._openie_failures is failures
+    assert failures == []
+    assert events[0].status.value == "error"
+    assert events[0].error == str(error)
+    assert events[0].result["write_count"] == 0
+
+    hipporag.index.side_effect = None
+    hipporag.chunk_embedding_store.get_all_ids.side_effect = [[], ["b"]]
+
+    assert memory.retain("Second passage.") == "Memory retained successfully."
+
+    assert len(events) == 2
+    assert events[1].status.value == "success"
+    assert events[1].error is None
+    assert events[1].result["write_count"] == 1
+    assert failures == []
+
+
 def test_unparseable_openie_reply_keeps_the_chunk_and_logs_an_error(
     monkeypatch, tmp_path
 ) -> None:
