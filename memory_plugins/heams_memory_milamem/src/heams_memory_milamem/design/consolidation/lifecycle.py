@@ -126,7 +126,10 @@ class ConsolidationLifecycle:
                 )
             # Applied in sequence order so older anchors resolve first.
             for (anchor, candidates), verdict in zip(anchor_groups, anchor_verdicts):
-                if verdict is None:
+                if verdict is None or any(
+                    records[record_index_by_id[candidate.id]].status != "active"
+                    for candidate in candidates
+                ):
                     skipped_cluster_count += 1
                     retry_pending_ids.add(anchor.id)
                     continue
