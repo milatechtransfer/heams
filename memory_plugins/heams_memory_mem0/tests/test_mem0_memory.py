@@ -6,10 +6,11 @@ These tests mock mem0's `Memory` class so they run offline without API keys.
 import json
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
-
+import tiktoken
 from heams.memory_systems.api import MemoryEntry
 from heams_memory_mem0 import (
     EmbedderConfig,
@@ -18,6 +19,7 @@ from heams_memory_mem0 import (
     Mem0MemorySystem,
     VectorStoreConfig,
 )
+from mem0.embeddings.openai import OpenAIEmbedding
 
 
 @pytest.fixture()
@@ -267,6 +269,29 @@ def test_init_with_backend_uses_from_config(mock_mem0_class, tmp_path) -> None:
     )
 
     mock_mem0_class.from_config.assert_called_once()
+
+
+def test_openai_embedding_inputs_are_truncated_to_token_cap(
+    mock_mem0_class, tmp_path
+) -> None:
+    sent: list[tuple[str, list[str], Any]] = []
+    model = MagicMock(spec=OpenAIEmbedding)
+    model.embed = lambda text, action=None: sent.append(("embed", [text], action))
+    model.embed_batch = lambda texts, action="add": sent.append(("batch", texts, action))
+    mock_mem0_class.from_config.return_value.embedding_model = model
+    long_text = "user: remember\nthis detail. " * 4000
+
+    system = Mem0MemorySystem(config=Mem0MemoryConfig(user_id="bob"), storage_dir=tmp_path)
+    system._memory.embedding_model.embed(long_text, "search")
+    system._memory.embedding_model.embed_batch(["short\ntext", long_text], "add")
+
+    [(_, [truncated], search), (_, [short, batch_truncated], add)] = sent
+    encoding = tiktoken.get_encoding("cl100k_base")
+    assert (search, add) == ("search", "add")
+    assert short == "short text"
+    assert truncated == batch_truncated
+    assert 8000 < len(encoding.encode_ordinary(truncated)) <= 8191
+    assert long_text.replace("\n", " ").startswith(truncated)
 
 
 def test_init_uses_runtime_local_unique_history_database(
