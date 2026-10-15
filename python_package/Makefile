@@ -1,4 +1,4 @@
-.PHONY: help setup ollama-install check test test-ci run run-overwrite run-smoke launch-campaign memory-list memory-test docs docs-serve docs-strict
+.PHONY: help setup ollama-install check test test-ci run run-overwrite run-smoke run-smoke-benchmark run-smoke-memory-system browse launch-campaign memory-list memory-test docs docs-serve docs-strict
 
 PYTHON_VERSION ?= 3.12
 
@@ -45,9 +45,19 @@ run-overwrite: ## Execute one exact run directory, overwriting existing output (
 	$(if $(strip $(OUTPUT_DIR)),,$(error OUTPUT_DIR is required. Use 'make run-overwrite CONFIG=<run-config-name> OUTPUT_DIR=<directory>'.))
 	uv run --python $(PYTHON_VERSION) heams run --config configs/runs/$(CONFIG).yaml --output-dir "$(OUTPUT_DIR)" --overwrite
 
-run-smoke: ## Run the benchmark and memory-system smoke tests.
+run-smoke: run-smoke-benchmark run-smoke-memory-system ## Run the benchmark and memory-system smoke tests and generate their reports.
+
+run-smoke-benchmark: ## Run a smoke test for every benchmark except Retention policy with in-context memory and generate reports.
 	$(MAKE) run CONFIG=smoke_test_benchmark OUTPUT_DIR="$(SMOKE_BENCHMARK_OUTPUT_DIR)"
+	uv run --python $(PYTHON_VERSION) heams generate-report --results-dir "$(SMOKE_BENCHMARK_OUTPUT_DIR)"
+
+run-smoke-memory-system: ## Run every memory system except Letta (needs Postgres) on one LoCoMo scenario and generate reports.
 	$(MAKE) run CONFIG=smoke_test_memory_system OUTPUT_DIR="$(SMOKE_MEMORY_SYSTEM_OUTPUT_DIR)"
+	uv run --python $(PYTHON_VERSION) heams generate-report --results-dir "$(SMOKE_MEMORY_SYSTEM_OUTPUT_DIR)"
+
+browse: ## Browse results in the local web GUI (RESULTS_DIR=...).
+	$(if $(strip $(RESULTS_DIR)),,$(error RESULTS_DIR is required. Use 'make browse RESULTS_DIR=<directory>'.))
+	uv run --python $(PYTHON_VERSION) heams browse --results-dir "$(RESULTS_DIR)"
 
 launch-campaign: ## Submit a Slurm campaign (CAMPAIGN=... CAMPAIGN_OUTPUT_DIR=...; PARTITION and SLURM_ACCOUNT from the environment).
 	cluster/submit_campaign.sh cluster/campaigns/$(CAMPAIGN).sh "$(CAMPAIGN_OUTPUT_DIR)"

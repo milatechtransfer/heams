@@ -300,8 +300,8 @@ def test_smoke_test_memory_system_run_config_covers_campaign_memory_systems() ->
     resolved = resolve_run_config(config_path)
 
     assert resolved.run_name == "smoke_test_memory_system"
-    assert len(resolved.experiments) == 4
-    assert len({experiment.name for experiment in resolved.experiments}) == 4
+    assert len(resolved.experiments) == 6
+    assert len({experiment.name for experiment in resolved.experiments}) == 6
     assert {
         experiment.agent_config_file.file_name for experiment in resolved.experiments
     } == {"campaigns/locomo.yaml"}
@@ -313,6 +313,8 @@ def test_smoke_test_memory_system_run_config_covers_campaign_memory_systems() ->
         "campaigns/in_context.yaml",
         "campaigns/milamem.yaml",
         "campaigns/mem0.yaml",
+        "campaigns/hipporag_openai.yaml",
+        "examples/example_in_memory.yaml",
     }
     assert {
         experiment.benchmark_config_file.file_name

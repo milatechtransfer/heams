@@ -48,55 +48,21 @@ Documentation: <https://milatechtransfer.github.io/heams/>
 `python_package/`) to see what is installed, and see
 [Memory backends](python_package/docs/memory-backends.md) for configuration.
 
-## Requirements
+## Getting started
 
-- git, make, and [uv](https://docs.astral.sh/uv/); `make setup` installs
-  Python 3.12 through uv if needed (the package requires Python ≥ 3.12.6)
-- An `OPENAI_API_KEY`: the bundled agents and LLM judges use OpenAI models
-- For Evo-Memory (including `make run-smoke`), an `HF_TOKEN` from a Hugging Face
-  account that has accepted the terms of the gated
-  [GPQA](https://huggingface.co/datasets/Idavidrein/gpqa) dataset
+Setup and usage are covered in the documentation:
 
-## Install
-
-```sh
-git clone https://github.com/milatechtransfer/heams.git
-cd heams
-make setup
-cp .env_template .env   # then fill in OPENAI_API_KEY (and HF_TOKEN)
-```
-
-Upstream datasets are downloaded on first use.
-
-## Quickstart
-
-Run one LoCoMo question end to end and turn the result into a report:
-
-```sh
-cd python_package
-uv run heams run --config configs/runs/examples/quickstart.yaml --output-dir results/quickstart
-uv run heams generate-report --results-dir results/quickstart
-```
-
-Each experiment's folder under `results/quickstart/` holds the raw results
-(`runs.jsonl`) and a readable `report.md`. To compare memory systems, run
-`configs/runs/examples/compare_memory_systems.yaml` the same way. `make run-smoke`
-runs a small smoke check of every benchmark except Retention policy (which has
-its own `retention_policy_smoke` config), plus four memory systems on LoCoMo.
-
-To explore results across runs in a local web GUI, run
-`uv run heams browse --results-dir results` (see
-[Results browser](python_package/docs/results-browser.md)).
-
-Next: [Getting started](python_package/docs/getting-started.md),
-[CLI](python_package/docs/cli.md), and
-[Understanding results](python_package/docs/results.md).
-
-## Extending
-
-- [Adding a memory system](python_package/docs/adding-memory-system.md): wrap
-  your memory system as a plugin package, without changing the framework.
-- [Adding a benchmark](python_package/docs/adding-benchmark.md).
+- [Quick start](python_package/docs/index.md#quick-start): install, set your
+  API keys, run the smoke tests and browse the results
+- [Getting started](python_package/docs/getting-started.md): requirements,
+  environment variables, how experiments and configs fit together, and the
+  Makefile targets
+- [CLI](python_package/docs/cli.md) and
+  [Understanding results](python_package/docs/results.md): running your own
+  experiments and reading their output
+- [Adding a memory system](python_package/docs/adding-memory-system.md) and
+  [Adding a benchmark](python_package/docs/adding-benchmark.md): extending the
+  framework
 
 ## Citing
 

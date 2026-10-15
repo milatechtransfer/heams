@@ -1,37 +1,80 @@
 # HEAMS: Holistic Evaluation of Agent Memory Systems
 
-This package contains the Python implementation of HEAMS. The repository `README.md` links to these pages; edit the Markdown
-files in this folder as the source of truth.
+This package contains the HEAMS benchmarking framework.
 
 ## Overview
 
-The broader project aims to build an extensible benchmarking library for agentic
-private memory. The benchmark evaluates memory architectures across privacy and
-performance dimensions.
+The goal of this project is to build an extensible benchmarking library for the holistic evaluation of agent memory systems.
+The benchmarks evaluate agent memory systems across dimensions of performance, privacy, user sovereignty and security.
 
 !!! info "What you can do here"
-    - Install the package and run campaigns with `heams run`
+    - Install the package and run experiments with `heams run`
     - Compare memory systems by declaring multiple experiments in a run config
     - Read results and per-experiment reports; add new benchmarks and memory systems
-
-!!! info "Config-driven benchmarks"
-    Supported benchmark families are selected in typed experiment configs and
-    materialized by `create_benchmark` as ordered `BenchmarkSample` workloads.
-    Use `heams run --config ... --output-dir ...` to execute them.
 
 ## Quick start
 
 From the project root:
 
-```sh
-make setup
-cd python_package && make run-smoke
-```
+1. Install dependencies:
 
-See [Getting started](getting-started.md) for setup (uv, Ollama, Makefile targets,
-tests), [CLI](cli.md) for declarative runs, and [Understanding results](results.md)
-for artefact layout. Preview docs locally with `make docs-serve` (project root or
-`python_package/`).
+    ```sh
+    make setup
+    ```
+
+2. Create your environment file from the template:
+
+    ```sh
+    cp .env_template .env
+    ```
+
+3. Open `.env` and set the keys the smoke run needs:
+
+    ```env
+    OPENAI_API_KEY=sk-...
+    HF_TOKEN=hf_...
+    ```
+
+    `OPENAI_API_KEY` is required because the bundled agents and LLM-as-judge
+    evaluators use OpenAI models. The Evo-Memory benchmark in the smoke run needs
+    Hugging Face access to the gated GPQA dataset: either set `HF_TOKEN`, or leave
+    it empty if you are already logged in with `hf auth login`. Either way, the
+    account must have accepted the GPQA terms.
+
+4. Move into `python_package/`. The remaining steps run from there:
+
+    ```sh
+    cd python_package
+    ```
+
+5. List the memory systems the framework has discovered, both built-in ones and
+    installed plugins. Each name is a `type` you can use in a memory-system
+    config:
+
+    ```sh
+    make memory-list
+    ```
+
+6. Run the benchmark smoke tests (one small scenario per benchmark, with
+    in-context memory). The target also writes a `report.md` for each
+    experiment under `python_package/results/smoke_test_benchmark/`:
+
+    ```sh
+    make run-smoke-benchmark
+    ```
+
+7. Explore the results in the local [results browser](results-browser.md):
+
+    ```sh
+    make browse RESULTS_DIR=results/smoke_test_benchmark
+    ```
+
+    It opens `http://127.0.0.1:8765/` in your browser, where you can drill down
+    from per-benchmark scores to each sample's transcript and judge output. Stop
+    it with `Ctrl+C`.
+
+See [Getting started](getting-started.md) for more detailed setup instructions, [CLI](cli.md) for more information about the CLI commands that the framework supports, and [Understanding results](results.md)
+for details about the result artefacts that are created by experiments.
 
 ## Guides
 

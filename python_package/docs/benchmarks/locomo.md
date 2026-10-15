@@ -54,8 +54,8 @@ uv run heams run \
   --output-dir results/locomo_smoke
 ```
 
-`smoke_test_memory_system.yaml` compares all four campaign memory systems on one
-smoke LoCoMo scenario. `smoke_test_benchmark.yaml` includes the same one-scenario
+`smoke_test_memory_system.yaml` compares six memory configurations (no-memory, in-context,
+MilaMem, Mem0, HippoRAG, and the example in-memory system) on one smoke LoCoMo scenario. `smoke_test_benchmark.yaml` includes the same one-scenario
 LoCoMo check with the in-context memory system alongside the other smoke benchmarks.
 
 For a fuller LoCoMo campaign, point a run config's `benchmark_config_file` at
