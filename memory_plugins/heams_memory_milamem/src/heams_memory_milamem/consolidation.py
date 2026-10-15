@@ -207,7 +207,6 @@ def anchor_candidates(
         dtype=float,
     )
     matrix /= np.clip(np.linalg.norm(matrix, axis=1, keepdims=True), 1e-12, None)
-    similarities = matrix @ matrix.T
 
     groups = []
     for i in sorted(range(len(records)), key=lambda index: records[index].sequence):
@@ -217,12 +216,13 @@ def anchor_candidates(
             anchor_roles is not None and role not in anchor_roles
         ):
             continue
+        similarities = matrix @ matrix[i]
         scored = [
-            (similarities[i, j], record)
+            (similarities[j], record)
             for j, record in enumerate(records)
             if record.sequence < anchor.sequence
             and record.metadata.get("role") == role
-            and similarities[i, j] >= similarity_threshold
+            and similarities[j] >= similarity_threshold
         ]
         if scored:
             scored.sort(key=lambda item: item[0], reverse=True)
