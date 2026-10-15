@@ -82,6 +82,10 @@ class TemporalMetadataConfig(BaseModel):
 
 class MilaMemConfig(BaseMemoryConfig):
     type: Literal["milamem"] = "milamem"
+    priming_speaker_prefix: bool = Field(
+        default=False,
+        description="Prefix primed content with the speaker name when available.",
+    )
     temporal_metadata: TemporalMetadataConfig = Field(
         default_factory=TemporalMetadataConfig,
         description="Optional temporal metadata enrichment configuration.",
@@ -239,6 +243,21 @@ class MilaMemMemorySystem(BaseMemorySystem):
             self._delete_strategy,
             query_planner=self._delete_query_planner,
         )
+
+    def prime_memory_entries(self, entries: list[MemoryEntry]) -> None:
+        for entry in entries:
+            content = entry.content
+            if self.config.priming_speaker_prefix:
+                speaker_name = entry.metadata.get(
+                    "ingest_speaker_name"
+                ) or entry.metadata.get("speaker")
+                if (
+                    isinstance(speaker_name, str)
+                    and speaker_name
+                    and not content.startswith(f"{speaker_name}:")
+                ):
+                    content = f"{speaker_name}: {content}"
+            self.retain(content=content, metadata=entry.metadata)
 
     def _windowed_active_canonical_records(
         self,

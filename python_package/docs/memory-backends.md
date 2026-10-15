@@ -229,6 +229,16 @@ Selected component presets:
 `recall_strategy`/`dedup_strategy` settings. Reference both from a run config's
 `experiments:` list to compare them head-to-head.
 
+For MilaMem, set `backend_config.priming_speaker_prefix: true` to prefix newly
+primed content with the name from `ingest_speaker_name` or, as a fallback,
+`speaker` metadata. For example, a named turn becomes `Caroline: message`.
+The option defaults to `false`; existing presets keep their current behavior.
+Entries without a speaker name remain unchanged, and `user`/`assistant` role
+labels are not used as names. Metadata and turn boundaries are preserved, and
+an existing matching prefix is not repeated. This affects priming only: normal
+`retain` calls and previously stored memories are unchanged. Keep the option
+disabled when reproducing runs that did not use speaker prefixes.
+
 Example memory-system file:
 
 ```yaml

@@ -4,6 +4,8 @@ backend_config:
   type: milamem
   name: milamem
   top_k: 10
+  # Set to true for LoCoMo to prefix primed turns with speaker names.
+  priming_speaker_prefix: false
   # Superseded hits are swapped for their active successor instead of dropped.
   recall_redirect_superseded: true
   temporal_metadata:
