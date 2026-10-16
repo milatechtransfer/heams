@@ -5,9 +5,11 @@ Letta's own FastAPI app is hosted in this process, so every call runs the same r
 and code as `letta server`, without a port. Letta 0.16.8 is Postgres-only; the plugin
 README covers the one-time database setup.
 
-Every memory operation is a message to the agent; the agent decides what to do with it:
+Priming defaults to inserting groups directly into archival memory as passages, without
+an agent completion. With `prime_mode="agent"`, each group is a message to the agent.
+Every other memory operation is a message to the agent:
 
-- priming and `retain` must START with one of `write_tools` (a Letta `run_first` tool
+- agent-mode priming and `retain` START with one of `write_tools` (a Letta `run_first` tool
   rule); the agent chooses which one and what to write, core or archival;
 - `recall` must start with `search_tool` and may then only search or answer; the agent
   writes the query, and the plugin returns core memory followed by the first `top_k`
@@ -49,6 +51,10 @@ from heams.memory_systems.api import (
 from pydantic import Field
 
 LETTA_VERSION = "0.16.8"
+
+# text-embedding-3-* per-input cap and tokenizer, as in MilaMem.
+_MAX_EMBED_INPUT_TOKENS = 8191
+_EMBED_TOKENIZER = "cl100k_base"
 
 # The MemGPT paper's tool set. 0.16.8 no longer attaches the archival tools by default
 # (DEPRECATED_LETTA_TOOLS), which would remove the paper's third memory tier.
@@ -234,6 +240,85 @@ def _repair_truncated_tool_arguments() -> None:
     LLMClientBase._fix_truncated_json_response = _fix_truncated_json_response
 
 
+def _enforce_core_memory_limits() -> None:
+    """Restore the block-limit checks removed in Letta 0.16.7."""
+    from letta.services.tool_executor.core_tool_executor import LettaCoreToolExecutor
+
+    append = LettaCoreToolExecutor.core_memory_append
+    replace = LettaCoreToolExecutor.core_memory_replace
+
+    def check_limit(agent_state: Any, label: str, new_value: str) -> None:
+        limit = agent_state.memory.get_block(label).limit
+        if len(new_value) > limit:
+            raise ValueError(
+                f"Edit failed: Exceeds {limit} character limit "
+                f"(requested {len(new_value)})"
+            )
+
+    async def core_memory_append(
+        self: Any, agent_state: Any, actor: Any, label: str, content: str
+    ) -> Any:
+        current = str(agent_state.memory.get_block(label).value)
+        check_limit(agent_state, label, current + "\n" + str(content))
+        return await append(self, agent_state, actor, label, content)
+
+    async def core_memory_replace(
+        self: Any,
+        agent_state: Any,
+        actor: Any,
+        label: str,
+        old_content: str,
+        new_content: str,
+    ) -> Any:
+        # str.replace("", text) inserts text between every character.
+        if not old_content:
+            raise ValueError(
+                "old_content must not be empty; use core_memory_append to add text."
+            )
+        current = str(agent_state.memory.get_block(label).value)
+        if old_content in current:
+            check_limit(
+                agent_state, label, current.replace(str(old_content), str(new_content))
+            )
+        return await replace(self, agent_state, actor, label, old_content, new_content)
+
+    LettaCoreToolExecutor.core_memory_append = core_memory_append
+    LettaCoreToolExecutor.core_memory_replace = core_memory_replace
+
+
+def _split_passages(header: str, body: str, max_tokens: int) -> list[str]:
+    """Split losslessly at UTF-8 boundaries, counting the repeated header in the cap."""
+    import tiktoken
+
+    encoding = tiktoken.get_encoding(_EMBED_TOKENIZER)
+    prefix = f"{header}\n" if header else ""
+    budget = max_tokens - len(encoding.encode_ordinary(prefix))
+    if budget <= 0:
+        raise ValueError("passage_max_tokens must leave room after the date header.")
+    tokens = encoding.encode_ordinary(body)
+    passages = []
+    start = 0
+    while start < len(tokens):
+        end = min(start + budget, len(tokens))
+        while end > start:
+            try:
+                piece = encoding.decode(tokens[start:end], errors="strict")
+            except UnicodeDecodeError:
+                end -= 1
+                continue
+            if len(encoding.encode_ordinary(prefix + piece)) <= max_tokens:
+                break
+            end -= 1
+        else:
+            raise ValueError(
+                "passage_max_tokens is too small to fit the next character "
+                "with the date header."
+            )
+        passages.append(prefix + piece)
+        start = end
+    return passages
+
+
 def _letta_client(pg_uri_env: str) -> Any:
     """Letta's app, hosted once per process and shared by every memory instance.
 
@@ -265,6 +350,7 @@ def _letta_client(pg_uri_env: str) -> Any:
             logging.getLogger("Letta").setLevel(logging.ERROR)
             _send_reasoning_effort_none()
             _repair_truncated_tool_arguments()
+            _enforce_core_memory_limits()
 
             try:
                 client = TestClient(app).__enter__()  # runs Letta's startup
@@ -358,6 +444,16 @@ def _memory_calls(response: dict[str, Any]) -> list[dict[str, Any]]:
     ]
 
 
+def _group_created_at(group: list[MemoryEntry]) -> str | None:
+    """Preserve the group's epoch as the archival passage timestamp."""
+    for entry in group:
+        epoch = entry.metadata.get("ingest_timestamp_epoch")
+        with suppress(TypeError, ValueError, OverflowError, OSError):
+            if epoch is not None:
+                return datetime.fromtimestamp(float(epoch), tz=UTC).isoformat()
+    return None
+
+
 def _group_date(group: list[MemoryEntry]) -> str | None:
     for entry in group:
         timestamp = entry.metadata.get("timestamp")
@@ -408,6 +504,28 @@ class LettaMemoryConfig(BaseMemoryConfig):
         gt=0,
         description="Letta summarises older messages out of the window when it fills.",
     )
+    max_output_tokens: int = Field(
+        default=4096,
+        gt=0,
+        description="Token cap on each agent completion, not the whole operation.",
+    )
+    prime_mode: Literal["insert", "agent"] = Field(
+        default="insert",
+        description=(
+            "insert writes each primed group directly into archival memory; agent "
+            "sends each group to MemGPT to decide what to store. Other operations "
+            "always go through the agent."
+        ),
+    )
+    passage_max_tokens: int = Field(
+        default=1024,
+        gt=0,
+        le=_MAX_EMBED_INPUT_TOKENS,
+        description=(
+            "Insert-mode passage token cap, including the date header. Small passages "
+            "keep archival search results within Letta's tool-result size limit."
+        ),
+    )
     block_limit: int = Field(
         default=2000,
         gt=0,
@@ -419,7 +537,7 @@ class LettaMemoryConfig(BaseMemoryConfig):
     write_tools: list[str] = Field(
         default_factory=lambda: list(WRITE_TOOLS),
         description=(
-            "Every priming or retain request must start with one of these tools; the "
+            "Every agent-mode priming or retain request starts with one of these tools; the "
             "agent chooses which, and what to write."
         ),
     )
@@ -477,6 +595,7 @@ class LettaMemorySystem(BaseMemorySystem):
         model_settings: dict[str, Any] = {
             "provider_type": self.config.model.split("/", 1)[0],
             "temperature": self.config.temperature,
+            "max_output_tokens": self.config.max_output_tokens,
         }
         if self.config.reasoning_effort is not None:
             model_settings["reasoning"] = {
@@ -514,6 +633,8 @@ class LettaMemorySystem(BaseMemorySystem):
                 "enable_sleeptime": False,
             },
         )["id"]
+        self._archive_id: str | None = None
+        self._archive_attached = False
 
     @staticmethod
     def _agent_name(run_context: dict[str, Any]) -> str:
@@ -604,13 +725,76 @@ class LettaMemorySystem(BaseMemorySystem):
 
     def close(self) -> None:
         agent_id, self._agent_id = self._agent_id, None
-        if agent_id is not None:
+        archive_id, self._archive_id = self._archive_id, None
+        for path in (
+            f"/agents/{agent_id}" if agent_id is not None else None,
+            f"/archives/{archive_id}" if archive_id is not None else None,
+        ):
+            if path is None:
+                continue
             try:
-                self._api("DELETE", f"/agents/{agent_id}")
+                self._api("DELETE", path)
             except Exception:  # cleanup only; a leftover agent affects no result
-                logger.warning(
-                    "Could not delete Letta agent %s", agent_id, exc_info=True
+                logger.warning("Could not delete Letta %s", path, exc_info=True)
+
+    def _archive(self) -> str:
+        """Create and attach an archive before the first direct archival write."""
+        if self._archive_id is None:
+            archive = self._api(
+                "POST",
+                "/archives/",
+                json={
+                    "name": f"{self._agent_id}-archival",
+                    "embedding": self.config.embedding,
+                },
+            )
+            self._archive_id = archive["id"]
+        if not self._archive_attached:
+            self._api(
+                "PATCH", f"/agents/{self._agent_id}/archives/attach/{self._archive_id}"
+            )
+            self._archive_attached = True
+        return self._archive_id
+
+    def _insert_group(self, group: list[MemoryEntry]) -> dict[str, Any]:
+        date = _group_date(group)
+        lines = []
+        for entry in group:
+            speaker = (
+                entry.metadata.get("ingest_speaker_name")
+                or entry.metadata.get("ingest_role")
+                or entry.metadata.get("role")
+            )
+            if entry.content.strip():
+                lines.append(
+                    f"{speaker}: {entry.content}" if speaker else entry.content
                 )
+        if not lines:
+            return {"write_count": 0}
+        created_at = _group_created_at(group)
+        passages = [
+            {"text": text, **({"created_at": created_at} if created_at else {})}
+            for text in _split_passages(
+                self.config.date_line.format(date=date) if date else "",
+                "\n".join(lines),
+                self.config.passage_max_tokens,
+            )
+        ]
+        created = self._api(
+            "POST",
+            f"/archives/{self._archive()}/passages/batch",
+            json={"passages": passages},
+        )
+        return {"write_count": len(created)}
+
+    def _send_group(self, group: list[MemoryEntry]) -> dict[str, Any]:
+        response = self._send(self._group_messages(group))
+        calls = _memory_calls(response)
+        return {
+            "write_count": len(calls),
+            "memory_calls": calls,
+            "stop_reason": (response.get("stop_reason") or {}).get("stop_reason"),
+        }
 
     def _group_messages(self, group: list[MemoryEntry]) -> list[dict[str, str]]:
         """One primed group as dialogue: the date, each turn in its role, then a close.
@@ -636,12 +820,22 @@ class LettaMemorySystem(BaseMemorySystem):
         return messages
 
     def prime_memory_entries(self, entries: list[MemoryEntry]) -> None:
-        """One agent request per ingest_group_id group, else per entry, in benchmark order."""
+        """Prime groups in benchmark order without interleaving agent operations."""
+        with self._lock:
+            self._prime_memory_entries(entries)
+
+    def _prime_memory_entries(self, entries: list[MemoryEntry]) -> None:
         groups: dict[str, list[MemoryEntry]] = {}
         for index, entry in enumerate(entries):
             group_id = str(entry.metadata.get("ingest_group_id", f"__entry_{index}"))
             groups.setdefault(group_id, []).append(entry)
-        self._set_rules(_run_first(self.config.write_tools))
+        if self.config.prime_mode == "agent":
+            self._set_rules(_run_first(self.config.write_tools))
+        prime_group = (
+            self._insert_group
+            if self.config.prime_mode == "insert"
+            else self._send_group
+        )
         for group in groups.values():
             group = sorted(
                 group, key=lambda entry: int(entry.metadata.get("ingest_order", 0))
@@ -655,7 +849,7 @@ class LettaMemorySystem(BaseMemorySystem):
             }
             start_time = time.perf_counter()
             try:
-                response = self._send(self._group_messages(group))
+                result = prime_group(group)
             except Exception as exc:
                 self._emit_memory_operation(
                     start_time=start_time,
@@ -669,19 +863,12 @@ class LettaMemorySystem(BaseMemorySystem):
                     error=str(exc),
                 )
                 raise
-            calls = _memory_calls(response)
             self._emit_memory_operation(
                 start_time=start_time,
                 operation_type="retain",
                 status="success",
                 payload=payload,
-                result={
-                    "write_count": len(calls),
-                    "memory_calls": calls,
-                    "stop_reason": (response.get("stop_reason") or {}).get(
-                        "stop_reason"
-                    ),
-                },
+                result=result,
             )
 
     def _retain_impl(

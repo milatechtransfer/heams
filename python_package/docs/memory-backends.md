@@ -740,8 +740,8 @@ privacy_config:
   `core_memory_replace`), archival memory (embedded passages, written with
   `archival_memory_insert` and searched with `archival_memory_search`), and recall
   memory (every message, searched with `conversation_search`). Unlike the other
-  backends, every operation is a message to that agent, and the agent decides what
-  it stores and what it searches for.
+  backends, the agent decides what it stores and searches for: every operation
+  except insert-mode priming is a message to that agent.
 
   | Field | Default | Meaning |
   |-------|---------|---------|
@@ -749,10 +749,13 @@ privacy_config:
   | `embedding` | required | Letta embedding handle, such as `openai/text-embedding-3-small` |
   | `temperature` | `0.7` | Sampling temperature of the MemGPT agent; Letta sends 1.0 to OpenAI reasoning models regardless |
   | `reasoning_effort` | `null` | Reasoning effort for OpenAI reasoning models (o-series, `gpt-5*`); unset, Letta asks them for `high` |
-  | `write_tools` | the three write tools | Every priming or retain request must start with one of these; the agent chooses which |
+  | `write_tools` | the three write tools | Every agent-mode priming or retain request starts with one of these; the agent chooses which |
   | `search_tool` | `archival_memory_search` | Every recall request must start with this tool; recall returns archival hits only |
   | `block_limit` | `2000` | Character limit of each core memory block, the MemGPT paper's value |
   | `context_window` | `16000` | Tokens before Letta summarises older messages out of the agent's context |
+  | `max_output_tokens` | `4096` | Cap on each agent completion, not the whole multi-step operation |
+  | `prime_mode` | `insert` | `insert` writes groups directly into archival memory; `agent` preserves agent-managed ingestion |
+  | `passage_max_tokens` | `1024` | Insert-mode passage token cap including the date header, using `cl100k_base`; maximum 8191 |
   | `max_steps` | `20` | Agent steps per operation |
   | `persona` / `human` | Letta's default persona / empty | Initial core memory blocks; Letta's default human block names every user "Chad", so it starts empty |
   | `date_line` / `end_line` / `forget_line` | see the plugin | Messages framing a primed group and a delete request |
@@ -760,13 +763,20 @@ privacy_config:
 
   How the contract maps onto MemGPT:
 
-  - `prime_memory_entries` sends one request per `ingest_group_id` group, turns
-    ordered by `ingest_order` in their `ingest_role` (a LoCoMo speaker B turn
-    enters as the agent's own reply) and prefixed with the speaker name, framed by
-    a date line and an end line. A Letta `run_first` tool rule makes the request
-    start with one of `write_tools`; the agent chooses which one and what to
-    write, and may make further edits. Each group is one retain event with
-    `is_priming: true` and the agent's `memory_calls`.
+  - `prime_memory_entries` handles each `ingest_group_id` group in benchmark order,
+    with turns ordered by `ingest_order`. In `insert` mode, each group becomes
+    archival passages in an archive attached to the agent: a repeated date line,
+    then turns prefixed with speaker names (or roles), with archival timestamps
+    from `ingest_timestamp_epoch` when supplied. Splits preserve the text and
+    include the header in the token cap; a cap too small for the header and next
+    character raises an error. Embedding calls still occur, but there are no agent
+    completions or conversation messages. In `agent` mode, the plugin sends one
+    request per group in its `ingest_role` (a LoCoMo speaker B turn enters as the
+    agent's own reply), framed by a date line and an end line. A Letta `run_first`
+    tool rule makes the request start with one of `write_tools`; the agent chooses
+    what to store in core or archival memory. Each group is one retain event with
+    `is_priming: true` and a `write_count` (passages in insert mode, tool calls in
+    agent mode); agent mode also records `memory_calls` and `stop_reason`.
   - `retain` sends the content as a user message under the same rule.
   - `recall` sends the query as a user message under rules that make the agent
     start with `search_tool` and then only search again or answer, so it cannot
@@ -788,8 +798,13 @@ privacy_config:
   message log, a summary included, so later probes are independent of earlier
   ones and a probe cannot come back as a memory. Delete keeps the agent's memory
   edits. This is a benchmark choice, not MemGPT behaviour: a deployed MemGPT agent
-  keeps every message it receives. Priming and `retain` messages stay, since they
-  are what the agent is asked to remember.
+  keeps every message it receives. Agent-mode priming and `retain` messages stay,
+  since they are what the agent is asked to remember. Insert-mode priming bypasses
+  those ingestion decisions, so results from the two modes are not equivalent.
+
+  The plugin restores core-memory block-limit checks removed in Letta 0.16.7 and
+  rejects replacements with empty `old_content`, avoiding unbounded block growth.
+  On close, it deletes the agent and any archive it created for insert priming.
 
   The preset runs the MemGPT agent on `gpt-4o-mini`, whatever model the benchmark
   agent uses. Letta 0.16.8 lets a request start with any one of several tools only
