@@ -5,7 +5,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-import yaml
 
 from heams.agents.config import AgentParameters
 from heams.benchmarks.evomemory.config import EvoMemorySingleTurnBenchmarkConfig
@@ -14,7 +13,6 @@ from heams.memory_systems.factory import MemorySystemVariant
 from heams.memory_systems.in_context import InContextConfig
 from heams.memory_systems.privacy import PrivacyConfig
 from heams.orchestration.experiment_config import ResolvedExperimentExecutionConfig
-from tests.paths import PACKAGE_ROOT
 
 AGENT_CONFIG = AgentParameters(model_id="openai:gpt-4o-mini", instructions="test")
 
@@ -183,19 +181,6 @@ def test_retention_policy_skips_policy_rules_coverage_in_llm_mode():
 
     _resolved_config(
         benchmark_config=RetentionPolicyBenchmarkConfig(), privacy_config=privacy
-    )
-
-
-def test_generated_retention_rules_config_covers_every_benchmark_policy():
-    doc = yaml.safe_load(
-        (
-            PACKAGE_ROOT / "configs" / "memory_systems" / "retention_rules.yaml"
-        ).read_text(encoding="utf-8")
-    )
-    # Only the privacy block: the backend is a plugin core tests don't load.
-    _resolved_config(
-        benchmark_config=RetentionPolicyBenchmarkConfig(),
-        privacy_config=PrivacyConfig.model_validate(doc["privacy_config"]),
     )
 
 

@@ -105,7 +105,6 @@ The rollup leads with one row per memory backend and one column per task type:
 
 | Memory backend | edit_accuracy | erase_accuracy |
 | --- | ---: | ---: |
-| basic_complete_memory_system | 16.7% (1/6) | 60.0% (3/5) |
 | no_memory | 0.0% (0/6) | 0.0% (0/5) |
 
 Both apply the same trivial-pass rule as the headline — `real` over every graded

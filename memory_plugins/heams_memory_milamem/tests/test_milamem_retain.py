@@ -416,8 +416,7 @@ def test_recall_excludes_superseded_canonical_records(
 
 
 def test_semantic_dedup_default_skips_exact_duplicate(tmp_path: Path) -> None:
-    """Canonical's default dedup_strategy is semantic (unlike
-    basic_complete_memory_system's bm25 default), per Chirag's note."""
+    """Canonical's default dedup_strategy is semantic, per Chirag's note."""
     memory = MilaMemMemorySystem(
         config=MilaMemConfig(
             name="test-semantic-default",

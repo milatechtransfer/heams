@@ -158,7 +158,7 @@ class MilaMemConfig(BaseMemoryConfig):
 class MilaMemMemorySystem(BaseMemorySystem):
     """MilaMem: experimental raw+canonical backend. Retain writes both stores; recall
     ranks the canonical store via a pluggable recall strategy (BM25 /
-    semantic / hybrid / rerank), same as `BasicCompleteMemorySystem`.
+    semantic / hybrid / rerank).
     Retain-time conflict search is windowed + top-k bounded (see
     `dedup_strategy.window`); `consolidate()` is the
     unwindowed, exhaustive backstop for whatever the window misses.

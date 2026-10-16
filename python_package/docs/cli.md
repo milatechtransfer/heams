@@ -66,7 +66,6 @@ make run CONFIG=smoke_test_benchmark OUTPUT_DIR=results/smoke_test_benchmark
 make run CONFIG=smoke_test_memory_system OUTPUT_DIR=results/smoke_test_memory_system
 make run CONFIG=testing/locomo_smoke OUTPUT_DIR=results/locomo_smoke
 make run CONFIG=testing/long_mem_eval_smoke OUTPUT_DIR=results/long_mem_eval_smoke
-make run CONFIG=testing/evomemory_single_turn_smoke OUTPUT_DIR=results/evomemory_single_turn_smoke
 make run CONFIG=testing/transparency_smoke OUTPUT_DIR=results/transparency_smoke
 ```
 
@@ -87,8 +86,9 @@ relative YAML paths under the matching subdirectory; nested paths such as
 `campaigns/mem0.yaml` are supported.
 
 The default `smoke_test_benchmark.yaml` contains one in-context experiment per
-smoke-scale benchmark, except Retention policy (run
-`retention_policy_smoke.yaml` for that). The complementary
+smoke-scale benchmark, except Retention policy, which needs a memory config
+with a `privacy_config` (see [Retention policy](benchmarks/retention_policy.md)).
+The complementary
 `smoke_test_memory_system.yaml` contains six one-scenario LoCoMo experiments:
 no-memory, in-context, MilaMem, Mem0, HippoRAG, and the example in-memory system. A representative benchmark smoke entry is:
 

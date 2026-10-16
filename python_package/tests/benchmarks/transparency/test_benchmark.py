@@ -608,14 +608,8 @@ def test_agent_yaml_owns_transparency_policy() -> None:
             "configs/agents/testing/transparency_gpt4o_mini_recall_only_tool_use.yaml"
         ).read_text(encoding="utf-8")
     )
-    memory = yaml.safe_load(
-        Path(
-            "configs/memory_systems/testing/basic_complete_memory_system_transparency.yaml"
-        ).read_text(encoding="utf-8")
-    )
     assert agent["memory_strategy"] == "recall_only_tool_use"
     assert agent["instructions"].startswith("You are evaluating transparent access")
     assert TRANSPARENCY_AGENT_INSTRUCTIONS in agent["instructions"] or agent[
         "instructions"
     ].startswith("You are evaluating")
-    assert memory["backend_config"]["top_k"] == 50

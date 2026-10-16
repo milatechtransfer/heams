@@ -34,7 +34,7 @@ The judge model defaults to `openai:gpt-4o-mini` (configured in
 |---------------|------|----------|
 | Benchmark (full) | `configs/benchmarks/full_campaign/long_mem_eval.yaml` | Default S split with no sample limit |
 | Benchmark (smoke) | `configs/benchmarks/testing/long_mem_eval_smoke.yaml` | Same workload with `limit: 1` |
-| Run (smoke) | `configs/runs/testing/long_mem_eval_smoke.yaml` | One-sample comparison of `no_memory` and `basic_complete_memory_system` |
+| Run (smoke) | `configs/runs/testing/long_mem_eval_smoke.yaml` | One-sample `no_memory` run |
 
 Run the smoke campaign from `python_package/`:
 

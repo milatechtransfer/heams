@@ -155,7 +155,7 @@ def test_report_sections_survive_disk_round_trip() -> None:
         ),
     )
     results = {scenario.id: [run]}
-    memory_labels = ["basic_complete_memory_system"]
+    memory_labels = ["milamem"]
 
     live = render_long_mem_eval_metrics_summary([scenario], results, memory_labels)
     disk = render_long_mem_eval_metrics_summary(

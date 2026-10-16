@@ -2,7 +2,7 @@
 name = "heams-memory-milamem"
 version = "1.0.0"
 license = "MIT"
-description = "MilaMem and basic_complete memory plugins for HEAMS."
+description = "MilaMem memory plugin for HEAMS."
 requires-python = ">=3.12.6"
 dependencies = [
     "heams>=1.0.0",
@@ -17,7 +17,6 @@ dependencies = [
 
 [project.entry-points."heams.memory_systems"]
 milamem = "heams_memory_milamem.plugin:milamem_plugin"
-basic_complete_memory_system = "heams_memory_milamem.plugin:basic_complete_plugin"
 
 [build-system]
 requires = ["setuptools>=77"]

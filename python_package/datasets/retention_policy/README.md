@@ -9,7 +9,6 @@ policies.json    12 policies, one per category
 rules.json       keyword rules for the deterministic baseline arm
 matrix.py        builds dataset.json from the three above
 generate.py      adds model-written sentences to corpus.json
-make_configs.py  builds the memory-system config and the matrix run config
 dataset.json     generated -- what the benchmark reads
 ```
 
@@ -44,7 +43,6 @@ policies and dropped under the twelfth.
 python datasets/retention_policy/matrix.py                  # 4/category -> 576 rows
 python datasets/retention_policy/matrix.py --per-category 8 # 8/category -> 1152 rows
 python datasets/retention_policy/matrix.py --render         # print the grid
-python datasets/retention_policy/make_configs.py            # regenerate the configs
 ```
 
 `matrix.py` refuses to build if the corpus is impure -- a sentence that strays
@@ -86,20 +84,14 @@ Two things to check after a batch:
 Each benchmark sample is one policy. It opens by handing the memory system that
 policy's statement (`set_retention_policy`), so the policy in force always
 matches the rows being scored. The whole matrix runs as **one experiment**
-against one memory-system config:
+against one memory-system config.
 
-```bash
-heams run --config configs/runs/retention_policy_matrix.yaml --output-dir <dir>
-```
-
-A keyword layer can't read a statement, so `configs/memory_systems/retention_rules.yaml`
+A keyword layer can't read a statement, so a deterministic memory config
 carries `retention.policy_rules`, mapping every statement in `policies.json` to
-its keyword list from `rules.json`; `make_configs.py` generates it. The block is
-backend-agnostic, since `PrivacyMemoryWrapper` wraps any memory system, built-in
-or plugin. To evaluate another backend, give it a memory config with its own
-`backend_config` and the same `privacy_config` block, and point a run config's
-`memory_system_config_file` at it. `configs/runs/retention_policy_smoke.yaml`
-runs RP-01 alone.
+its keyword list from `rules.json`. The block is backend-agnostic, since
+`PrivacyMemoryWrapper` wraps any memory system, built-in or plugin. To evaluate
+a backend, give it a memory config with that `privacy_config` block, and point a
+run config's `memory_system_config_file` at it.
 
 ## Read the two rates, not accuracy
 
@@ -113,21 +105,14 @@ The off-diagonal is what makes over-blocking visible: a layer that drops
 credentials under a health-only policy fails cells no single-policy run would
 have exercised.
 
-## Baseline
-
-Deterministic keyword rules (`retention_rules.yaml`), 8 sentences per category:
-
-```
-leak rate    26.0%  (25/96)
-allowed rate 99.2%  (1048/1056)
-```
+## Keyword rules
 
 The rules in `rules.json` are derived from each **policy statement**, not from
 the corpus -- deriving them from the sentences would let the baseline score
 itself. An earlier corpus-derived ruleset produced a flattering 2.1% leak; treat
 that kind of number with suspicion.
 
-The failures split two ways, both instructive:
+Keyword rules fail two ways, both instructive:
 
 - **Diagonal misses** -- keyword brittleness. `"Feeds Juniper twice daily using a
   measured scoop."` contains no pet keyword.

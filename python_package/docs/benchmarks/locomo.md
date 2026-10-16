@@ -31,7 +31,6 @@ Implementation lives under `heams/benchmarks/locomo/`
 |------|----------------|
 | Agent | `configs/agents/testing/gpt4o_mini_recall_only_tool_use.yaml` |
 | Memory (baseline) | `configs/memory_systems/testing/no_memory.yaml` |
-| Memory (file-backed) | `configs/memory_systems/testing/basic_complete_memory_system.yaml` |
 | Benchmark (smoke) | `configs/benchmarks/testing/locomo_smoke.yaml` (`limit: 1`, `limit_stimuli: 1`) |
 | Benchmark (full) | `configs/benchmarks/full_campaign/locomo.yaml` (limits commented out) |
 | Run (smoke) | `configs/runs/testing/locomo_smoke.yaml` |
@@ -67,11 +66,9 @@ Requires `OPENAI_API_KEY` for the default OpenAI agent and judge
 
 ## Experiment matrix
 
-Bundled smoke runs compare two memory systems by declaring two experiments that
-share agent + LoCoMo smoke config:
-
-1. `no_memory`
-2. `basic_complete_memory_system`
+The bundled smoke run declares one `no_memory` experiment with the agent +
+LoCoMo smoke config. To compare memory systems, list one experiment per
+memory-system config.
 
 See [Memory backends](../memory-backends.md).
 

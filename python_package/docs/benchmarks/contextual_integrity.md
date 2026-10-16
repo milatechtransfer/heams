@@ -21,7 +21,6 @@ Implementation lives under `heams/benchmarks/contextual_integrity/`
 |------|----------------|
 | Agent | `configs/agents/testing/contextual_integrity_gpt4o_mini_recall_only_deterministic.yaml` |
 | Memory (baseline) | `configs/memory_systems/testing/no_memory.yaml` |
-| Memory (file-backed) | `configs/memory_systems/testing/basic_complete_memory_system.yaml` |
 | Benchmark (smoke) | `configs/benchmarks/testing/contextual_integrity_smoke.yaml` (`limit: 1`) |
 | Benchmark (full) | `configs/benchmarks/full_campaign/contextual_integrity.yaml` (limit commented out) |
 | Run (smoke) | `configs/runs/testing/contextual_integrity_smoke.yaml` |
@@ -53,15 +52,10 @@ Requires `OPENAI_API_KEY` for the default OpenAI agent and judge
 
 ## Experiment matrix
 
-Bundled smoke runs compare two memory systems by declaring two experiments that
-share the agent + CI smoke config:
-
-1. `no_memory`
-2. `basic_complete_memory_system`
-
-The `no_memory` arm is the floor for both metric families: with no stored
-information it cannot leak and cannot cover, so the memory arm is read against
-it. See [Memory backends](../memory-backends.md).
+The bundled smoke run declares one `no_memory` experiment with the agent + CI
+smoke config. The `no_memory` arm is the floor for both metric families: with
+no stored information it cannot leak and cannot cover, so a memory arm added to
+the run is read against it. See [Memory backends](../memory-backends.md).
 
 ## Evaluation
 

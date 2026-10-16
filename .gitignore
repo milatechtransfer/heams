@@ -20,7 +20,6 @@ python_package/datasets/contextual_integrity/ci_*.json
 !python_package/datasets/retention_policy/rules.json
 !python_package/datasets/retention_policy/dataset.json
 !python_package/datasets/retention_policy/matrix.py
-!python_package/datasets/retention_policy/make_configs.py
 !python_package/datasets/retention_policy/generate.py
 !python_package/datasets/retention_policy/README.md
 .idea/

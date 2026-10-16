@@ -285,7 +285,7 @@ def test_render_transparency_metrics_summary_includes_sections() -> None:
         render_transparency_metrics_summary(
             scenarios,
             results,
-            ["basic_complete_memory_system"],
+            ["milamem"],
         )
     )
 
