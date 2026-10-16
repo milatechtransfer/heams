@@ -219,7 +219,7 @@ Selected component presets:
 | `configs/memory_systems/campaigns/in_context.yaml` | `in_context` | n/a |
 | `configs/memory_systems/testing/basic_complete_memory_system.yaml` | `basic_complete_memory_system` | bm25 / bm25 |
 | `configs/memory_systems/testing/semantic_memory_system.yaml` | `basic_complete_memory_system` | semantic / semantic |
-| `configs/memory_systems/campaigns/milamem.yaml` | `milamem` | bm25 / semantic |
+| `configs/memory_systems/campaigns/milamem.yaml` | `milamem` | hybrid / semantic |
 | `configs/memory_systems/campaigns/mem0.yaml` | `mem0` | provider-defined |
 | `configs/memory_systems/campaigns/hipporag_openai.yaml` | `hipporag` | provider-defined |
 | `configs/memory_systems/campaigns/letta_openai.yaml` | `letta` | agent-defined |
@@ -228,6 +228,16 @@ Selected component presets:
 `testing/semantic_memory_system.yaml` are the same backend with different
 `recall_strategy`/`dedup_strategy` settings. Reference both from a run config's
 `experiments:` list to compare them head-to-head.
+
+For MilaMem, set `backend_config.priming_speaker_prefix: true` to prefix newly
+primed content with the name from `ingest_speaker_name` or, as a fallback,
+`speaker` metadata. For example, a named turn becomes `Caroline: message`.
+The option defaults to `false`; existing presets keep their current behavior.
+Entries without a speaker name remain unchanged, and `user`/`assistant` role
+labels are not used as names. Metadata and turn boundaries are preserved, and
+an existing matching prefix is not repeated. This affects priming only: normal
+`retain` calls and previously stored memories are unchanged. Keep the option
+disabled when reproducing runs that did not use speaker prefixes.
 
 Example memory-system file:
 
@@ -430,10 +440,7 @@ privacy_config:
   semantic conflict resolution over the same configured window. A semantic
   candidate search is ranked first,
   and if the top-ranked candidate's cosine similarity to the incoming
-  content clears a similarity floor (`RETAIN_JUDGE_SIMILARITY_FLOOR = 0.5`,
-  a hardcoded constant, not a config field — calibrated against real
-  `text-embedding-3-small` output: 0.75 never fired on real conflicting
-  sentences with natural surrounding detail, only on near-minimal ones),
+  content meets `retain_judge_similarity_floor` (default `0.85`),
   the same LLM judge `consolidate()` uses
   (`consolidation.judge_cluster`) is called on just `[incoming, top
   candidate]` and is the sole authority on duplicate / conflict / unrelated.
@@ -444,6 +451,7 @@ privacy_config:
   |-------|---------|---------|
   | `dedup_strategy.enabled` | `true` | `false` disables exact deduplication and semantic conflict resolution; `true` enables both |
   | `dedup_strategy.kind` | `semantic` | Candidate ranker; canonical ledger requires semantic ranking when deduplication is enabled. BM25 remains available to other backends and is accepted here only while deduplication is disabled |
+  | `retain_judge_similarity_floor` | `0.85` | Minimum top-candidate cosine similarity for retain-time LLM reconciliation; independent of `consolidation.similarity_threshold` |
   | `dedup_strategy.window.days` | `None` (unbounded) | Active only when `temporal_metadata.enabled=True`; bounds exact and semantic reconciliation by `metadata.temporal_received_at` |
   | `dedup_strategy.window.turns` | `None` (unbounded) | Used when temporal metadata is disabled; bounds exact and semantic reconciliation to the N most recent active records |
 
@@ -465,7 +473,15 @@ privacy_config:
   | `consolidation.max_pending_per_run` | `50` | Maximum pending IDs processed in one pass; comparisons still include the active store |
   | `consolidation.similarity_threshold` | `0.85` | Cosine similarity cutoff for clustering active canonical records before LLM judgment |
   | `consolidation.llm_model` | `openai:gpt-4o-mini` | any_llm model id used to judge each cluster |
+  | `consolidation.cluster_system_prompt` | Built-in cluster judge prompt | System prompt shared by cluster consolidation and retain-time reconciliation |
+  | `consolidation.anchor_system_prompt` | Built-in anchor judge prompt | System prompt used by anchor-mode consolidation |
   | `consolidation.max_cluster_size` | `8` | Cap on records judged per LLM call; larger clusters are split into chunks |
+
+  The campaign preset includes both system prompts explicitly. Omitting either
+  field preserves the built-in prompt; overrides change only the system message,
+  not the user-message format or structured verdict schema. Delete system prompts
+  are configured separately under `delete_strategy.planning.system_prompt` and
+  `delete_strategy.top_k_llm.system_prompt`.
 
   **Delete configuration.**
 

@@ -182,7 +182,8 @@ def test_recall_lifecycle_excludes_inactive_records_and_preserves_scores() -> No
     strategy = RecordingRecallStrategy()
     runtime = SimpleNamespace(
         config=SimpleNamespace(
-            recall_strategy=RecallStrategyConfig(kind=RecallStrategyKind.BM25)
+            recall_strategy=RecallStrategyConfig(kind=RecallStrategyKind.BM25),
+            recall_redirect_superseded=False,
         ),
         _recall_strategy=strategy,
         _save_embedding_cache=lambda: None,
@@ -205,7 +206,8 @@ def test_recall_lifecycle_excludes_inactive_records_and_preserves_scores() -> No
 def test_recall_lifecycle_returns_chronological_tail_for_empty_query() -> None:
     runtime = SimpleNamespace(
         config=SimpleNamespace(
-            recall_strategy=RecallStrategyConfig(kind=RecallStrategyKind.BM25)
+            recall_strategy=RecallStrategyConfig(kind=RecallStrategyKind.BM25),
+            recall_redirect_superseded=False,
         ),
         _recall_strategy=RecordingRecallStrategy(),
         _save_embedding_cache=lambda: None,

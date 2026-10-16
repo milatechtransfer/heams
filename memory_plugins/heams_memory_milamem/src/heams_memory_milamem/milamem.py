@@ -69,24 +69,16 @@ from .temporal import parse_temporal_timestamp
 
 STATE_SCHEMA_VERSION = 1
 
-# Gates whether a retain-time top-candidate match is worth an LLM judge
-# call (semantic dedup_strategy only). Calibrated against real
-# text-embedding-3-small output, not a guess: 0.75
-# (the original value) never fired on real conflicting sentences with any
-# natural surrounding detail (e.g. "Alice lives in Boston and works as a
-# nurse" vs "Alice moved to Chicago for a new job" scored 0.54) — it only
-# ever cleared for near-minimal, few-words-different sentences. 0.5 clears
-# real conflicts while staying well above real unrelated-content scores
-# (~0.15 in the same probe).
-RETAIN_JUDGE_SIMILARITY_FLOOR = 0.5
-
-
 class TemporalMetadataConfig(BaseModel):
     enabled: bool = False
 
 
 class MilaMemConfig(BaseMemoryConfig):
     type: Literal["milamem"] = "milamem"
+    priming_speaker_prefix: bool = Field(
+        default=False,
+        description="Prefix primed content with the speaker name when available.",
+    )
     temporal_metadata: TemporalMetadataConfig = Field(
         default_factory=TemporalMetadataConfig,
         description="Optional temporal metadata enrichment configuration.",
@@ -116,6 +108,15 @@ class MilaMemConfig(BaseMemoryConfig):
             "enabled=true enables both over the configured window."
         ),
     )
+    retain_judge_similarity_floor: float = Field(
+        default=0.85,
+        ge=0.0,
+        le=1.0,
+        description=(
+            "Minimum top-candidate cosine similarity required for retain-time "
+            "LLM reconciliation."
+        ),
+    )
 
     @model_validator(mode="after")
     def validate_semantic_dedup_strategy(self) -> Self:
@@ -142,6 +143,13 @@ class MilaMemConfig(BaseMemoryConfig):
         description=(
             "Config for consolidate()'s clustering + LLM-judged backstop; "
             "embeds via dedup_strategy.embed_model."
+        ),
+    )
+    recall_redirect_superseded: bool = Field(
+        default=False,
+        description=(
+            "Rank superseded records too, and return each superseded hit's "
+            "active successor (via superseded_by) in its place."
         ),
     )
 
@@ -196,7 +204,7 @@ class MilaMemMemorySystem(BaseMemorySystem):
         )
         self._consolidation_lifecycle = ConsolidationLifecycle()
         self._retain_lifecycle = RetainLifecycle(
-            similarity_floor=RETAIN_JUDGE_SIMILARITY_FLOOR,
+            similarity_floor=self.config.retain_judge_similarity_floor,
         )
         # Recall, dedup, and consolidate share one cache — content embedded
         # for one is reused by the others when `embed_model` matches.
@@ -237,6 +245,21 @@ class MilaMemMemorySystem(BaseMemorySystem):
             self._delete_strategy,
             query_planner=self._delete_query_planner,
         )
+
+    def prime_memory_entries(self, entries: list[MemoryEntry]) -> None:
+        for entry in entries:
+            content = entry.content
+            if self.config.priming_speaker_prefix:
+                speaker_name = entry.metadata.get(
+                    "ingest_speaker_name"
+                ) or entry.metadata.get("speaker")
+                if (
+                    isinstance(speaker_name, str)
+                    and speaker_name
+                    and not content.startswith(f"{speaker_name}:")
+                ):
+                    content = f"{speaker_name}: {content}"
+            self.retain(content=content, metadata=entry.metadata)
 
     def _windowed_active_canonical_records(
         self,
@@ -418,7 +441,7 @@ class MilaMemMemorySystem(BaseMemorySystem):
         top_k: int = 0,
     ) -> MemoryOperationResult:
         # Recall reads the canonical (deduplicated) store, not raw; excludes
-        # superseded records.
+        # superseded records unless recall_redirect_superseded is set.
         outcome = self._recall_lifecycle.run(
             self,
             query,

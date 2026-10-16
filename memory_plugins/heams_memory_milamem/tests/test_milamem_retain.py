@@ -83,6 +83,7 @@ def memory(tmp_path: Path) -> MilaMemMemorySystem:
     return MilaMemMemorySystem(
         config=MilaMemConfig(
             name="test",
+            retain_judge_similarity_floor=0.5,
             raw_store_path=str(tmp_path / "raw.json"),
             canonical_store_path=str(tmp_path / "canonical.json"),
             dedup_strategy=DedupStrategyConfig(
@@ -101,6 +102,7 @@ def _semantic_memory(tmp_path: Path, **config_kwargs) -> MilaMemMemorySystem:
     fake reliably clears that floor for same-subject conflicting content
     (e.g. "Alice is in Paris."/"Alice is in London.")."""
     config_kwargs.setdefault("name", "test-semantic")
+    config_kwargs.setdefault("retain_judge_similarity_floor", 0.5)
     config_kwargs.setdefault(
         "dedup_strategy",
         DedupStrategyConfig(
@@ -187,6 +189,21 @@ def test_retain_resolves_conflict_supersedes_old_canonical_record(
     raw = _raw_records(memory)
     assert len(raw) == 2
     assert all(r["status"] == "active" for r in raw)
+
+
+def test_retain_related_verdict_keeps_both_records(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def _judge_related(model: str, records: list) -> ConsolidationVerdict:
+        return ConsolidationVerdict(relationship="related", canonical_id=records[-1].id)
+
+    monkeypatch.setattr(consolidation_module, "judge_cluster", _judge_related)
+    memory = _semantic_memory(tmp_path)
+    memory.retain("Alice is in Paris.")
+    memory.retain("Alice is in London.")
+
+    canonical = _canonical_records(memory)
+    assert [r["status"] for r in canonical] == ["active", "active"]
 
 
 def test_retain_does_not_resolve_conflict_ranked_outside_dedup_candidates(
@@ -438,6 +455,7 @@ def test_semantic_dedup_default_resolves_conflict(tmp_path: Path) -> None:
     memory = MilaMemMemorySystem(
         config=MilaMemConfig(
             name="test-semantic-default",
+            retain_judge_similarity_floor=0.5,
             raw_store_path=str(tmp_path / "raw.json"),
             canonical_store_path=str(tmp_path / "canonical.json"),
         ),

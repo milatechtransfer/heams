@@ -93,7 +93,15 @@ class LlmJudgeDeleteStrategy(BaseDeleteStrategy):
             )
 
         selection_config = self.config.top_k_llm
-        candidate_data = [candidate.model_dump() for candidate in eligible_candidates]
+        # Short aliases: the judge mistypes 32-char hex record IDs.
+        alias_to_id = {
+            f"c{index}": candidate.memory_id
+            for index, candidate in enumerate(eligible_candidates, start=1)
+        }
+        candidate_data = [
+            {"id": alias, "content": candidate.content}
+            for alias, candidate in zip(alias_to_id, eligible_candidates)
+        ]
         messages: list[dict[str, Any] | ChatCompletionMessage] = [
             {
                 "role": "system",
@@ -103,7 +111,7 @@ class LlmJudgeDeleteStrategy(BaseDeleteStrategy):
                 "role": "user",
                 "content": selection_config.user_prompt_template.format(
                     original_query=query_plan.original_query,
-                    query_plan=query_plan.model_dump_json(),
+                    query_plan=query_plan.model_dump_json(exclude={"cardinality"}),
                     candidates=json.dumps(candidate_data, ensure_ascii=True),
                 ),
             },
@@ -118,22 +126,31 @@ class LlmJudgeDeleteStrategy(BaseDeleteStrategy):
             return self._fail_closed(
                 "The deletion judge returned malformed output; nothing was selected."
             )
-        selected_ids = list(dict.fromkeys(decision.selected_ids))
-        decision = decision.model_copy(update={"selected_ids": selected_ids})
-        if decision.ambiguous and selected_ids:
+        if decision.ambiguous and decision.selected_ids:
             return self._fail_closed(
                 "The deletion judge reported ambiguity; nothing was selected."
             )
-        candidate_ids = {candidate.memory_id for candidate in eligible_candidates}
-        if any(memory_id not in candidate_ids for memory_id in selected_ids):
-            return self._fail_closed(
-                "The deletion judge returned an unknown candidate ID; nothing was selected."
-            )
-        allowed_count = (
-            1 if query_plan.cardinality == "one" else self.config.max_delete_count
+        rank = {
+            candidate.memory_id: index
+            for index, candidate in enumerate(eligible_candidates)
+        }
+        resolved = [
+            alias_to_id.get(selected, selected) for selected in decision.selected_ids
+        ]
+        selected_ids = sorted(
+            {memory_id for memory_id in resolved if memory_id in rank},
+            key=rank.__getitem__,
         )
-        if len(selected_ids) > allowed_count:
-            return self._fail_closed(
-                "The deletion judge exceeded the deletion limit; nothing was selected."
+        notes = [decision.reasoning] if decision.reasoning else []
+        unknown_count = sum(memory_id not in rank for memory_id in resolved)
+        if unknown_count:
+            notes.append(f"Dropped {unknown_count} unknown candidate ID(s).")
+        if len(selected_ids) > self.config.max_delete_count:
+            notes.append(
+                f"Trimmed {len(selected_ids)} selections to the deletion limit "
+                f"of {self.config.max_delete_count}."
             )
-        return decision
+            selected_ids = selected_ids[: self.config.max_delete_count]
+        return decision.model_copy(
+            update={"selected_ids": selected_ids, "reasoning": " ".join(notes)}
+        )
