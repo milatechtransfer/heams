@@ -77,6 +77,26 @@ def _quote_ner_passage(openie: OpenIE) -> None:
     ]
 
 
+def _tolerate_openie_failures(openie: OpenIE, failures: list[str]) -> None:
+    """Keep passages with failed extraction and report the failure in their events."""
+
+    def tolerant(extract: Any) -> Any:
+        def call(chunk_key: str, *args: Any, **kwargs: Any) -> Any:
+            result = extract(chunk_key, *args, **kwargs)
+            error = result.metadata.pop("error", None)
+            if error is not None:
+                failures.append(
+                    f"{extract.__name__} failed for {chunk_key}: {error} "
+                    f"Reply: {result.response[:500]!r}"
+                )
+            return result
+
+        return call
+
+    openie.ner = tolerant(openie.ner)
+    openie.triple_extraction = tolerant(openie.triple_extraction)
+
+
 def _render_turn(entry: MemoryEntry) -> str:
     """Prefix the speaker, which a passage of plain text would otherwise lose."""
     metadata = entry.metadata
@@ -140,9 +160,11 @@ class HippoRAGMemorySystem(BaseMemorySystem):
         self._hipporag = HippoRAG(global_config=BaseConfig(**self.config.global_config))
         if isinstance(self._hipporag.embedding_model, OpenAIEmbeddingModel):
             _truncate_embedding_inputs(self._hipporag.embedding_model)
+        self._openie_failures: list[str] = []
         openie = self._hipporag.openie
         if isinstance(openie, OpenIE):
             _quote_ner_passage(openie)
+            _tolerate_openie_failures(openie, self._openie_failures)
 
     def close(self) -> None:
         self._hipporag.close()
@@ -186,31 +208,47 @@ class HippoRAGMemorySystem(BaseMemorySystem):
                     error=str(exc),
                 )
                 raise
+            error = self._take_openie_failures()
             self._emit_memory_operation(
                 start_time=start_time,
                 operation_type="retain",
-                status="success",
+                status="error" if error else "success",
                 payload=payload,
                 result={"write_count": write_count},
+                error=error,
             )
 
     def _passage_count(self) -> int:
         return len(self._hipporag.chunk_embedding_store.get_all_ids())
 
+    def _take_openie_failures(self) -> str | None:
+        if not self._openie_failures:
+            return None
+        error = " | ".join(self._openie_failures)
+        self._openie_failures.clear()
+        return error
+
     def _index(self, chunk: Chunk) -> int:
         """Index one passage; returns 0 when its exact text is already stored."""
-        before = self._passage_count()
-        self._hipporag.index([chunk])
-        return self._passage_count() - before
+        try:
+            before = self._passage_count()
+            self._hipporag.index([chunk])
+            return self._passage_count() - before
+        except Exception:
+            self._openie_failures.clear()
+            raise
 
     def _retain_impl(
         self, content: str, metadata: dict[str, Any]
     ) -> MemoryOperationResult:
         message = "Memory retained successfully."
         write_count = self._index(Chunk(content=content, metadata=metadata))
+        error = self._take_openie_failures()
         return MemoryOperationResult(
             value=message,
+            status="error" if error else "success",
             result={"message": message, "write_count": write_count},
+            error=error,
         )
 
     def _recall_impl(self, query: str, top_k: int) -> MemoryOperationResult:

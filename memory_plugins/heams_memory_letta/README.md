@@ -5,9 +5,9 @@ implements [MemGPT](https://arxiv.org/abs/2310.08560), as a memory plugin for
 HEAMS. Plugin type: `letta`. Preset:
 `python_package/configs/memory_systems/campaigns/letta_openai.yaml`.
 
-Each memory instance is one `memgpt_agent` with the paper's six memory tools, and
-every memory operation is a message to that agent: it decides what to store and what
-to search for. See the "letta (external plugin)" section of
+Each memory instance is one `memgpt_agent` with the paper's six memory tools.
+Priming defaults to direct archival insertion; all other operations are messages to
+the agent, which decides what to store and search for. See the "letta (external plugin)" section of
 `python_package/docs/memory-backends.md` for how each operation maps onto MemGPT.
 
 ## Why 0.16.8
@@ -53,8 +53,8 @@ OPENAI_API_KEY=...
 ```
 
 To start over, `dropdb letta` and repeat steps 2 and 4. Every memory instance creates
-its own agent and deletes it on close, so agents left in the database by an
-interrupted run never affect a result.
+its own agent and deletes it and any plugin-created archive on close, so resources
+left in the database by an interrupted run never affect a result.
 
 ## Tests
 
@@ -64,8 +64,32 @@ make -C memory_plugins/heams_memory_letta test-live # the campaign preset, one s
 make -C memory_plugins/heams_memory_letta test      # both
 ```
 
+`test-ci` covers both priming modes with a fake client. It makes no model calls and
+starts no database. `test-live`
+uses the campaign preset's priming mode (insert by default); it is not needed for
+unit validation.
+
 ## Things to know
 
+- **Priming modes.** `prime_mode: insert` (default) writes each group directly into
+  archival memory, preserving turn order, speaker labels, dates and epoch timestamps
+  when supplied. It makes embedding calls, but no agent completions and adds no
+  conversation messages. `prime_mode: agent` preserves MemGPT-managed ingestion:
+  each group is a message and the agent chooses what to store in core or archival
+  memory. `retain`, `recall` and `delete` always use the agent. These modes measure
+  different ingestion behavior; distinguish them when comparing benchmark results.
+- **Passage and completion limits.** `passage_max_tokens: 1024` caps insert-mode
+  passages, including the repeated date header, using `cl100k_base` (the tokenizer
+  for the presets' OpenAI embeddings). The maximum is 8191. Text is preserved across
+  splits; a cap too small for the header and next character raises an error.
+  `max_output_tokens: 4096` caps each agent completion, not the whole multi-step
+  operation. The plugin also restores Letta's core-block character-limit checks and
+  rejects `core_memory_replace` with empty `old_content`.
+- **Cluster Postgres.** `python_package/cluster/letta/run_with_postgres.sh` uses a
+  unique database copy under `SLURM_TMPDIR` when available, otherwise under
+  `$LETTA_PG_ROOT/jobs`. Connections use its Unix socket. Cleanup discards the copy
+  and preserves its Postgres log at `$LETTA_PG_ROOT/logs/<job_id>.log`; no campaign
+  wiring changes are required.
 - **Dependency overrides.** Letta pins OpenTelemetry, `mcp`, `uvicorn`, `websockets`
   and `docstring-parser` to versions older than `python_package`'s; resolved as
   pinned they downgrade the benchmark agent's own dependencies. Both this package

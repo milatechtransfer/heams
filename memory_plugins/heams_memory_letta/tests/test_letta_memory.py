@@ -12,20 +12,22 @@ import json
 import threading
 import time
 from collections import deque
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
 import pytest
+import tiktoken
 from heams.memory_systems.api import MemoryEntry
 from heams.memory_systems.plugins import discover_memory_plugins
-from pydantic import ValidationError
-
 from heams_memory_letta import LettaMemoryConfig, LettaMemorySystem, plugin
+from pydantic import ValidationError
 
 # The package re-exports the descriptor as `plugin`, which shadows the submodule name.
 letta_plugin = importlib.import_module("heams_memory_letta.plugin")
 
 AGENT_ID = "agent-1"
+ARCHIVE_ID = "archive-1"
 
 
 class FakeResponse:
@@ -53,6 +55,10 @@ class FakeLetta:
         # Applied to core memory when the next agent message is handled.
         self.core_edits: deque[str | None] = deque()
         self.fail_messages = False
+        self.fail_inserts = False
+        self.fail_attach = False
+        self.fail_agent_delete = False
+        self.inserted: list[list[dict[str, Any]]] = []
         # (tool rules in force, message) per agent message, and the most requests seen
         # inside a message at once: what the instance lock must keep to one.
         self.rules_at_message: list[tuple[list[dict[str, str]], str]] = []
@@ -100,6 +106,27 @@ class FakeLetta:
         if method == "GET" and path == f"/agents/{AGENT_ID}/core-memory/blocks":
             return FakeResponse([dict(block) for block in self.blocks])
         if method == "DELETE" and path == f"/agents/{AGENT_ID}":
+            if self.fail_agent_delete:
+                return FakeResponse({"detail": "delete failed"}, status_code=500)
+            return FakeResponse(None)
+        if method == "POST" and path == "/archives/":
+            return FakeResponse({"id": ARCHIVE_ID})
+        if (
+            method == "PATCH"
+            and path == f"/agents/{AGENT_ID}/archives/attach/{ARCHIVE_ID}"
+        ):
+            if self.fail_attach:
+                return FakeResponse({"detail": "attach failed"}, status_code=500)
+            return FakeResponse(None)
+        if method == "POST" and path == f"/archives/{ARCHIVE_ID}/passages/batch":
+            if self.fail_inserts:
+                return FakeResponse({"detail": "embedding failed"}, status_code=500)
+            passages = kwargs["json"]["passages"]
+            self.inserted.append(passages)
+            return FakeResponse(
+                [{"id": f"p{i}", **passage} for i, passage in enumerate(passages)]
+            )
+        if method == "DELETE" and path == f"/archives/{ARCHIVE_ID}":
             return FakeResponse(None)
         raise AssertionError(f"unexpected request {method} {path}")
 
@@ -202,6 +229,17 @@ def memory(
 # ---- configuration and plugin descriptor ----------------------------------------------
 
 
+@pytest.fixture()
+def agent_memory(
+    fake_letta: FakeLetta, config: LettaMemoryConfig, events: list[Any], tmp_path: Path
+) -> LettaMemorySystem:
+    return LettaMemorySystem(
+        config=config.model_copy(update={"prime_mode": "agent"}),
+        storage_dir=tmp_path,
+        event_sink=events,
+    )
+
+
 def test_config_requires_model_and_embedding() -> None:
     with pytest.raises(ValidationError) as error:
         LettaMemoryConfig.model_validate({})
@@ -224,6 +262,9 @@ def test_config_defaults_follow_the_agreed_profile(config: LettaMemoryConfig) ->
     assert config.temperature == 0.7
     assert config.human == ""
     assert config.pg_uri_env == "LETTA_PG_URI"
+    assert config.prime_mode == "insert"
+    assert config.max_output_tokens == 4096
+    assert config.passage_max_tokens == 1024
 
 
 def test_config_rejects_unknown_fields() -> None:
@@ -257,7 +298,11 @@ def test_creates_one_memgpt_agent_with_the_papers_tools(
     )
     assert body["model"] == "openai/gpt-4o-mini"
     assert body["embedding"] == "openai/text-embedding-3-small"
-    assert body["model_settings"] == {"provider_type": "openai", "temperature": 0.7}
+    assert body["model_settings"] == {
+        "provider_type": "openai",
+        "temperature": 0.7,
+        "max_output_tokens": 4096,
+    }
     assert body["context_window_limit"] == 16000
     assert body["compaction_settings"] == {"model": "openai/gpt-4o-mini"}
     assert body["memory_blocks"] == [
@@ -280,11 +325,13 @@ def test_reasoning_effort_is_sent_in_model_settings(
         embedding="openai/text-embedding-3-small",
         write_tools=["archival_memory_insert"],
         reasoning_effort="none",
+        max_output_tokens=512,
     )
     LettaMemorySystem(config=config, storage_dir=tmp_path)
     (create,) = fake_letta.requests_to("POST", "/agents/")
     body = create["json"]
     assert body["model_settings"]["reasoning"] == {"reasoning_effort": "none"}
+    assert body["model_settings"]["max_output_tokens"] == 512
     assert body["compaction_settings"] == {"model": "openai/gpt-5.6-luna"}
 
 
@@ -380,9 +427,9 @@ def turn(
 
 
 def test_primes_one_request_per_group_in_order_with_roles_and_speakers(
-    memory: LettaMemorySystem, fake_letta: FakeLetta
+    agent_memory: LettaMemorySystem, fake_letta: FakeLetta
 ) -> None:
-    memory.prime_memory_entries(
+    agent_memory.prime_memory_entries(
         [
             turn("How are you?", "s1", 1, "assistant", ingest_speaker_name="Bob"),
             turn(
@@ -410,18 +457,27 @@ def test_primes_one_request_per_group_in_order_with_roles_and_speakers(
 
 
 def test_priming_keeps_the_write_rule_set_at_creation(
-    memory: LettaMemorySystem, fake_letta: FakeLetta
+    agent_memory: LettaMemorySystem, fake_letta: FakeLetta
 ) -> None:
-    memory.prime_memory_entries([turn("hi", "s1", 0, "user")])
+    agent_memory.prime_memory_entries([turn("hi", "s1", 0, "user")])
     assert (
         fake_letta.tool_rules() == []
     )  # created with the write rule; nothing to change
 
 
-def test_entries_without_a_group_are_primed_one_by_one(
-    memory: LettaMemorySystem, fake_letta: FakeLetta
+def test_agent_priming_restores_write_rules_without_creating_an_archive(
+    agent_memory: LettaMemorySystem, fake_letta: FakeLetta
 ) -> None:
-    memory.prime_memory_entries(
+    agent_memory.recall("switch to search rules")
+    agent_memory.prime_memory_entries([turn("hi", "s1", 0, "user")])
+    assert fake_letta.tool_rules()[-1] == rules(*letta_plugin.WRITE_TOOLS)
+    assert fake_letta.requests_to("POST", "/archives/") == []
+
+
+def test_entries_without_a_group_are_primed_one_by_one(
+    agent_memory: LettaMemorySystem, fake_letta: FakeLetta
+) -> None:
+    agent_memory.prime_memory_entries(
         [
             MemoryEntry(
                 content="first", metadata={"ingest_timestamp_epoch": 1717000000}
@@ -443,7 +499,7 @@ def test_entries_without_a_group_are_primed_one_by_one(
 
 
 def test_priming_emits_one_retain_event_per_group_with_the_agents_writes(
-    memory: LettaMemorySystem, fake_letta: FakeLetta, events: list[Any]
+    agent_memory: LettaMemorySystem, fake_letta: FakeLetta, events: list[Any]
 ) -> None:
     fake_letta.replies.append(
         {
@@ -464,7 +520,7 @@ def test_priming_emits_one_retain_event_per_group_with_the_agents_writes(
             "stop_reason": {"stop_reason": "end_turn"},
         }
     )
-    memory.prime_memory_entries([turn("I moved to Toronto.", "s1", 0, "user")])
+    agent_memory.prime_memory_entries([turn("I moved to Toronto.", "s1", 0, "user")])
     (event,) = events
     assert event.operation_type == "retain"
     assert event.status == "success"
@@ -478,14 +534,212 @@ def test_priming_emits_one_retain_event_per_group_with_the_agents_writes(
 
 
 def test_priming_failure_emits_an_error_event_and_raises(
-    memory: LettaMemorySystem, fake_letta: FakeLetta, events: list[Any]
+    agent_memory: LettaMemorySystem, fake_letta: FakeLetta, events: list[Any]
 ) -> None:
     fake_letta.fail_messages = True
     with pytest.raises(RuntimeError, match="HTTP 500.*boom"):
+        agent_memory.prime_memory_entries([turn("hi", "s1", 0, "user")])
+    (event,) = events
+    assert event.status == "error"
+    assert event.result["write_count"] == 0
+
+
+# ---- insert-mode priming ---------------------------------------------------------------
+
+
+def test_insert_mode_writes_groups_without_messaging_the_agent(
+    memory: LettaMemorySystem, fake_letta: FakeLetta, events: list[Any]
+) -> None:
+    before = (list(fake_letta.log), list(fake_letta.context))
+    memory.prime_memory_entries(
+        [
+            turn("How are you?", "s1", 1, "assistant", ingest_speaker_name="Bob"),
+            turn(
+                "I moved to Toronto.",
+                "s1",
+                0,
+                "user",
+                ingest_speaker_name="Alice",
+                timestamp="8 May, 2023",
+                ingest_timestamp_epoch=1683504000,
+            ),
+            turn("Nice!", "s2", 0, "user"),
+            turn("   ", "s3", 0, "user"),
+        ]
+    )
+    assert fake_letta.sent_messages() == []
+    assert (fake_letta.log, fake_letta.context) == before
+    (create,) = fake_letta.requests_to("POST", "/archives/")
+    assert create["json"] == {
+        "name": f"{AGENT_ID}-archival",
+        "embedding": "openai/text-embedding-3-small",
+    }
+    attach = f"/agents/{AGENT_ID}/archives/attach/{ARCHIVE_ID}"
+    assert len(fake_letta.requests_to("PATCH", attach)) == 1
+    assert fake_letta.inserted == [
+        [
+            {
+                "text": "Conversation on 8 May, 2023.\nAlice: I moved to Toronto.\n"
+                "Bob: How are you?",
+                "created_at": "2023-05-08T00:00:00+00:00",
+            }
+        ],
+        [{"text": "user: Nice!"}],
+    ]
+    assert [event.result["write_count"] for event in events] == [1, 1, 0]
+    assert all(event.payload["is_priming"] for event in events)
+    assert all(event.operation_type == "retain" for event in events)
+
+
+def test_insert_mode_splits_long_groups_and_preserves_content(
+    memory: LettaMemorySystem, fake_letta: FakeLetta
+) -> None:
+    content = "remember this detail number 42 please. " * 3000
+    memory.prime_memory_entries(
+        [turn(content, "s1", 0, "user", timestamp="8 May, 2023")]
+    )
+    (passages,) = fake_letta.inserted
+    encoding = tiktoken.get_encoding("cl100k_base")
+    header = "Conversation on 8 May, 2023.\n"
+    assert len(passages) > 1
+    assert all(p["text"].startswith(header) for p in passages)
+    assert all(len(encoding.encode_ordinary(p["text"])) <= 1024 for p in passages)
+    assert (
+        "".join(p["text"].removeprefix(header) for p in passages) == f"user: {content}"
+    )
+
+
+@pytest.mark.parametrize(
+    ("header", "body"),
+    [
+        ("Conversation on today.", "\u4f60\u597d\U0001f642 calf\u00e9 " * 30),
+        ("", "<|endoftext|>" * 30),
+    ],
+)
+def test_passage_splitting_preserves_unicode_and_token_caps(
+    header: str, body: str
+) -> None:
+    encoding = tiktoken.get_encoding("cl100k_base")
+    prefix = f"{header}\n" if header else ""
+    passages = letta_plugin._split_passages(header, body, 16)
+    assert "".join(p.removeprefix(prefix) for p in passages) == body
+    assert all(len(encoding.encode_ordinary(p)) <= 16 for p in passages)
+
+
+@pytest.mark.parametrize(
+    ("header", "body", "limit"),
+    [("Conversation on today.", "hello", 1), ("", "\U0001f642", 1)],
+)
+def test_passage_splitting_rejects_impossible_budgets(
+    header: str, body: str, limit: int
+) -> None:
+    with pytest.raises(ValueError, match="passage_max_tokens"):
+        letta_plugin._split_passages(header, body, limit)
+
+
+@pytest.mark.parametrize("failure", ["fail_inserts", "fail_attach"])
+def test_insert_failure_emits_an_error_and_keeps_archive_for_cleanup(
+    memory: LettaMemorySystem, fake_letta: FakeLetta, events: list[Any], failure: str
+) -> None:
+    setattr(fake_letta, failure, True)
+    with pytest.raises(RuntimeError, match="HTTP 500"):
         memory.prime_memory_entries([turn("hi", "s1", 0, "user")])
     (event,) = events
     assert event.status == "error"
     assert event.result["write_count"] == 0
+    memory.close()
+    assert len(fake_letta.requests_to("DELETE", f"/archives/{ARCHIVE_ID}")) == 1
+
+
+@pytest.mark.parametrize("fail_agent_delete", [False, True])
+def test_close_deletes_archive_once_even_if_agent_cleanup_fails(
+    memory: LettaMemorySystem, fake_letta: FakeLetta, fail_agent_delete: bool, caplog
+) -> None:
+    memory.prime_memory_entries([turn("hi", "s1", 0, "user")])
+    memory.prime_memory_entries([turn("again", "s2", 0, "user")])
+    fake_letta.fail_agent_delete = fail_agent_delete
+    memory.close()
+    memory.close()
+    assert len(fake_letta.requests_to("POST", "/archives/")) == 1
+    assert len(fake_letta.requests_to("DELETE", f"/archives/{ARCHIVE_ID}")) == 1
+    assert len(fake_letta.requests_to("DELETE", f"/agents/{AGENT_ID}")) == 1
+    if fail_agent_delete:
+        assert "Could not delete Letta /agents/" in caplog.text
+
+
+# ---- core memory limits ----------------------------------------------------------------
+
+
+@pytest.fixture()
+def core_tools(monkeypatch: pytest.MonkeyPatch) -> tuple[Any, Any]:
+    from letta.schemas.block import Block
+    from letta.schemas.memory import Memory
+    from letta.services.tool_executor.core_tool_executor import LettaCoreToolExecutor
+
+    for name in ("core_memory_append", "core_memory_replace"):
+        monkeypatch.setattr(
+            LettaCoreToolExecutor, name, getattr(LettaCoreToolExecutor, name)
+        )
+    letta_plugin._enforce_core_memory_limits()
+
+    async def update_memory_if_changed_async(**_: Any) -> None:
+        return None
+
+    executor = object.__new__(LettaCoreToolExecutor)
+    executor.agent_manager = SimpleNamespace(
+        update_memory_if_changed_async=update_memory_if_changed_async
+    )
+    state = SimpleNamespace(
+        id=AGENT_ID,
+        memory=Memory(
+            blocks=[Block(label="human", value="Alice lives in Paris", limit=30)]
+        ),
+    )
+    return executor, state
+
+
+def test_core_memory_append_refuses_overflow_without_mutation(
+    core_tools: tuple[Any, Any],
+) -> None:
+    executor, state = core_tools
+    with pytest.raises(
+        ValueError, match=r"Exceeds 30 character limit \(requested 33\)"
+    ):
+        asyncio.run(executor.core_memory_append(state, None, "human", "x" * 12))
+    assert state.memory.get_block("human").value == "Alice lives in Paris"
+    asyncio.run(executor.core_memory_append(state, None, "human", "x" * 9))
+    assert len(state.memory.get_block("human").value) == 30
+
+
+def test_core_memory_replace_refuses_empty_old_content_and_overflow(
+    core_tools: tuple[Any, Any],
+) -> None:
+    executor, state = core_tools
+    with pytest.raises(ValueError, match="old_content must not be empty"):
+        asyncio.run(executor.core_memory_replace(state, None, "human", "", "Rome"))
+    with pytest.raises(ValueError, match="Exceeds 30 character limit"):
+        asyncio.run(
+            executor.core_memory_replace(
+                state, None, "human", "Paris", "Paris, Rome and Oslo"
+            )
+        )
+    assert state.memory.get_block("human").value == "Alice lives in Paris"
+    with pytest.raises(ValueError, match="not found"):
+        asyncio.run(executor.core_memory_replace(state, None, "human", "Oslo", "Rome"))
+    asyncio.run(executor.core_memory_replace(state, None, "human", "Paris", "Rome"))
+    assert state.memory.get_block("human").value == "Alice lives in Rome"
+
+
+def test_core_memory_guards_preserve_read_only_blocks(
+    core_tools: tuple[Any, Any],
+) -> None:
+    executor, state = core_tools
+    state.memory.get_block("human").read_only = True
+    with pytest.raises(ValueError):
+        asyncio.run(executor.core_memory_append(state, None, "human", "Tea"))
+    with pytest.raises(ValueError):
+        asyncio.run(executor.core_memory_replace(state, None, "human", "Paris", "Rome"))
+    assert state.memory.get_block("human").value == "Alice lives in Paris"
 
 
 # ---- retain ----------------------------------------------------------------------------
@@ -775,7 +1029,9 @@ def test_repair_replaces_lettas_truncated_json_closer() -> None:
         choices=[
             SimpleNamespace(
                 message=SimpleNamespace(
-                    tool_calls=[SimpleNamespace(function=SimpleNamespace(arguments=raw))]
+                    tool_calls=[
+                        SimpleNamespace(function=SimpleNamespace(arguments=raw))
+                    ]
                 )
             )
         ]
@@ -798,9 +1054,13 @@ def test_repair_replaces_lettas_truncated_json_closer() -> None:
 
 
 def test_repair_encodes_a_tab_and_drops_a_carriage_return() -> None:
-    tabbed = json.loads(letta_plugin._repair_tool_arguments('{"message":"Hello\n\tcontinued'))
+    tabbed = json.loads(
+        letta_plugin._repair_tool_arguments('{"message":"Hello\n\tcontinued')
+    )
     assert tabbed["message"] == "Hello\n\tcontinued"
-    returned = json.loads(letta_plugin._repair_tool_arguments('{"message":"Hello\n\rcontinued'))
+    returned = json.loads(
+        letta_plugin._repair_tool_arguments('{"message":"Hello\n\rcontinued')
+    )
     assert returned["message"] == "Hello\ncontinued"
     runaway = '{"message":"Hello\n\n' + "\n\t \r" * 10 + "tail"
     collapsed = json.loads(letta_plugin._repair_tool_arguments(runaway))

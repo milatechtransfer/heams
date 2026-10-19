@@ -1,6 +1,6 @@
 from typing import NamedTuple
 
-from ..consolidation import ConsolidationVerdict
+from ..consolidation import AnchorVerdict, ConsolidationVerdict
 from .storage_type import CanonicalMemoryRecord, RawMemoryRecord
 
 
@@ -66,10 +66,13 @@ def _apply_verdict(
 ) -> VerdictOutcome:
     """Shared by `_retain_impl`/`_consolidate_impl`: marks every
     non-winner in `judged_records` `superseded` in `store_records`
-    (mutated in place). No-op if the verdict is 'unrelated' or names an
-    id outside the judged group."""
+    (mutated in place). No-op if the verdict is 'related'/'unrelated' or
+    names an id outside the judged group."""
     judged_ids = {record.id for record in judged_records}
-    if verdict.relationship == "unrelated" or verdict.canonical_id not in judged_ids:
+    if (
+        verdict.relationship in ("related", "unrelated")
+        or verdict.canonical_id not in judged_ids
+    ):
         return VerdictOutcome(superseded_ids=[], reason=None)
 
     canonical_id = verdict.canonical_id
@@ -88,3 +91,33 @@ def _apply_verdict(
         )
         superseded_ids.append(record.id)
     return VerdictOutcome(superseded_ids=superseded_ids, reason=reason)
+
+
+def _apply_anchor_verdict(
+    anchor: CanonicalMemoryRecord,
+    candidates: list[CanonicalMemoryRecord],
+    verdict: AnchorVerdict,
+    *,
+    store_records: list[CanonicalMemoryRecord],
+    record_index_by_id: dict[str, int],
+) -> dict[str, str]:
+    """Supersedes, in favour of the newer `anchor`, each candidate the
+    verdict names duplicate/conflict; returns superseded id -> reason."""
+    candidate_ids = {record.id for record in candidates}
+    superseded: dict[str, str] = {}
+    for item in verdict.verdicts:
+        if item.relationship not in ("duplicate", "conflict"):
+            continue
+        if item.id not in candidate_ids:
+            continue
+        index = record_index_by_id[item.id]
+        if store_records[index].status != "active":
+            continue
+        reason = (
+            "deduplicated" if item.relationship == "duplicate" else "conflict_resolved"
+        )
+        store_records[index] = _mark_canonical_superseded(
+            store_records[index], canonical_id=anchor.id, reason=reason
+        )
+        superseded[item.id] = reason
+    return superseded

@@ -15,5 +15,10 @@ backend_config:
   search_tool: archival_memory_search
   block_limit: 2000
   context_window: 16000
+  max_output_tokens: 4096
+  # Direct archival priming still embeds the history, but makes no agent completions.
+  # Use agent to preserve MemGPT-managed ingestion.
+  prime_mode: insert
+  passage_max_tokens: 1024
   # Postgres with pgvector and Letta 0.16.8's schema; see the plugin README.
   pg_uri_env: LETTA_PG_URI

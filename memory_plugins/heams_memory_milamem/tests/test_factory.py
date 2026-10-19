@@ -75,8 +75,8 @@ def test_milamem_campaign_yaml_validates_with_runtime_paths_unset() -> None:
     assert variant.id == "milamem"
     assert isinstance(variant.backend_config, MilaMemConfig)
     assert variant.backend_config.temporal_metadata.enabled is True
-    assert variant.backend_config.dedup_strategy.window.days == 10
-    assert variant.backend_config.recall_strategy.kind.value == "bm25"
+    assert variant.backend_config.dedup_strategy.window.days is None
+    assert variant.backend_config.recall_strategy.kind.value == "hybrid"
     assert variant.backend_config.dedup_strategy.kind.value == "semantic"
     assert {
         "raw_store_path",

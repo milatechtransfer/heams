@@ -4,19 +4,22 @@ test_milamem_consolidate.py."""
 
 import hashlib
 import json
+from types import SimpleNamespace
 
 import pytest
-
 from heams_memory_milamem import recall_strategies as recall_strategies_module
 from heams_memory_milamem.consolidation import (
+    ConsolidationConfig,
     chunk_cluster,
     cluster_by_similarity,
     judge_cluster,
 )
+from heams_memory_milamem.dedup_strategies import DedupStrategyConfig, DedupStrategyKind
 from heams_memory_milamem.design.storage_type import (
     CanonicalMemoryProvenance,
     CanonicalMemoryRecord,
 )
+from heams_memory_milamem.milamem import MilaMemConfig, MilaMemMemorySystem
 from heams_memory_milamem.recall_strategies import EmbeddingCache
 
 
@@ -228,8 +231,52 @@ def test_judge_cluster_calls_any_llm_with_allow_running_loop(
         _record("a", "Alice lives in Paris.", 1),
         _record("b", "Alice lives in Lyon.", 2),
     ]
-    verdict = judge_cluster("fake-model", records)
+    config = ConsolidationConfig(llm_model="fake-model")
+    verdict = judge_cluster(config, records)
 
     assert captured_kwargs.get("allow_running_loop") is True
+    assert captured_kwargs["messages"][0]["content"] == config.cluster_system_prompt
     assert verdict.relationship == "duplicate"
     assert verdict.canonical_id == "b"
+
+
+@pytest.mark.parametrize("mode", ["retain", "cluster", "anchor"])
+def test_configured_prompt_reaches_judge_through_memory_lifecycle(
+    monkeypatch: pytest.MonkeyPatch, tmp_path, mode: str
+) -> None:
+    import any_llm
+
+    submitted: list[str] = []
+
+    def completion(**kwargs):
+        submitted.append(kwargs["messages"][0]["content"])
+        content = '{"verdicts": []}' if mode == "anchor" else '{"relationship": "related"}'
+        return SimpleNamespace(
+            choices=[SimpleNamespace(message=SimpleNamespace(content=content))]
+        )
+
+    monkeypatch.setattr(any_llm, "completion", completion)
+    config = MilaMemConfig(
+        raw_store_path=str(tmp_path / "raw.json"),
+        canonical_store_path=str(tmp_path / "canonical.json"),
+        dedup_strategy=DedupStrategyConfig(
+            enabled=mode == "retain", kind=DedupStrategyKind.SEMANTIC
+        ),
+        consolidation=ConsolidationConfig(
+            cluster_system_prompt="Custom cluster prompt.\nDo not alter.",
+            anchor_system_prompt="Custom anchor prompt.\nDo not alter.",
+            anchor_top_k=1 if mode == "anchor" else None,
+            judge_concurrency=1,
+        ),
+    )
+    memory = MilaMemMemorySystem(config, storage_dir=tmp_path)
+    memory.retain("same|old fact", {"role": "user"})
+    memory.retain("same|new fact", {"role": "user"})
+    if mode != "retain":
+        memory.consolidate()
+    expected = (
+        config.consolidation.anchor_system_prompt
+        if mode == "anchor"
+        else config.consolidation.cluster_system_prompt
+    )
+    assert submitted == [expected]

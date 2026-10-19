@@ -215,10 +215,20 @@ Selected component presets:
 |------|---------|---|
 | `configs/memory_systems/testing/no_memory.yaml` | `no_memory` | n/a |
 | `configs/memory_systems/campaigns/in_context.yaml` | `in_context` | n/a |
-| `configs/memory_systems/campaigns/milamem.yaml` | `milamem` | bm25 / semantic |
+| `configs/memory_systems/campaigns/milamem.yaml` | `milamem` | hybrid / semantic |
 | `configs/memory_systems/campaigns/mem0.yaml` | `mem0` | provider-defined |
 | `configs/memory_systems/campaigns/hipporag_openai.yaml` | `hipporag` | provider-defined |
 | `configs/memory_systems/campaigns/letta_openai.yaml` | `letta` | agent-defined |
+
+For MilaMem, set `backend_config.priming_speaker_prefix: true` to prefix newly
+primed content with the name from `ingest_speaker_name` or, as a fallback,
+`speaker` metadata. For example, a named turn becomes `Caroline: message`.
+The option defaults to `false`; existing presets keep their current behavior.
+Entries without a speaker name remain unchanged, and `user`/`assistant` role
+labels are not used as names. Metadata and turn boundaries are preserved, and
+an existing matching prefix is not repeated. This affects priming only: normal
+`retain` calls and previously stored memories are unchanged. Keep the option
+disabled when reproducing runs that did not use speaker prefixes.
 
 === "milamem (external plugin)"
 
@@ -241,10 +251,7 @@ Selected component presets:
   semantic conflict resolution over the same configured window. A semantic
   candidate search is ranked first,
   and if the top-ranked candidate's cosine similarity to the incoming
-  content clears a similarity floor (`RETAIN_JUDGE_SIMILARITY_FLOOR = 0.5`,
-  a hardcoded constant, not a config field — calibrated against real
-  `text-embedding-3-small` output: 0.75 never fired on real conflicting
-  sentences with natural surrounding detail, only on near-minimal ones),
+  content meets `retain_judge_similarity_floor` (default `0.85`),
   the same LLM judge `consolidate()` uses
   (`consolidation.judge_cluster`) is called on just `[incoming, top
   candidate]` and is the sole authority on duplicate / conflict / unrelated.
@@ -255,6 +262,7 @@ Selected component presets:
   |-------|---------|---------|
   | `dedup_strategy.enabled` | `true` | `false` disables exact deduplication and semantic conflict resolution; `true` enables both |
   | `dedup_strategy.kind` | `semantic` | Candidate ranker; canonical ledger requires semantic ranking when deduplication is enabled. BM25 remains available to other backends and is accepted here only while deduplication is disabled |
+  | `retain_judge_similarity_floor` | `0.85` | Minimum top-candidate cosine similarity for retain-time LLM reconciliation; independent of `consolidation.similarity_threshold` |
   | `dedup_strategy.window.days` | `None` (unbounded) | Active only when `temporal_metadata.enabled=True`; bounds exact and semantic reconciliation by `metadata.temporal_received_at` |
   | `dedup_strategy.window.turns` | `None` (unbounded) | Used when temporal metadata is disabled; bounds exact and semantic reconciliation to the N most recent active records |
 
@@ -276,7 +284,15 @@ Selected component presets:
   | `consolidation.max_pending_per_run` | `50` | Maximum pending IDs processed in one pass; comparisons still include the active store |
   | `consolidation.similarity_threshold` | `0.85` | Cosine similarity cutoff for clustering active canonical records before LLM judgment |
   | `consolidation.llm_model` | `openai:gpt-4o-mini` | any_llm model id used to judge each cluster |
+  | `consolidation.cluster_system_prompt` | Built-in cluster judge prompt | System prompt shared by cluster consolidation and retain-time reconciliation |
+  | `consolidation.anchor_system_prompt` | Built-in anchor judge prompt | System prompt used by anchor-mode consolidation |
   | `consolidation.max_cluster_size` | `8` | Cap on records judged per LLM call; larger clusters are split into chunks |
+
+  The campaign preset includes both system prompts explicitly. Omitting either
+  field preserves the built-in prompt; overrides change only the system message,
+  not the user-message format or structured verdict schema. Delete system prompts
+  are configured separately under `delete_strategy.planning.system_prompt` and
+  `delete_strategy.top_k_llm.system_prompt`.
 
   **Delete configuration.**
 
@@ -430,6 +446,10 @@ Selected component presets:
   Install `heams-memory-mem0` before validating a component config with
   `type: mem0`.
 
+  OpenAI embedding inputs are normalized to single-line text and capped at 8191
+  tokens using `cl100k_base`, for both individual and batch calls. This limits
+  embedding requests, not the memory content passed to Mem0.
+
   The plugin keeps the backend configuration helpers separate from the runtime
   implementation. Each nested section accepts its common fields below and
   forwards additional provider-specific fields to Mem0:
@@ -517,9 +537,12 @@ Selected component presets:
     or one passage per entry when the benchmark sets no group. A metadata key
     that differs across a group's turns (such as `dia_id`) becomes a list. Each
     passage is indexed and logged as one priming `retain` event, like Mem0's
-    groups; a failed passage is logged as an error and fails priming.
+    groups. Extraction failures reported by OpenIE retain the passage without
+    the failed entities/triples, log an error event, and allow priming to continue.
+    Other indexing exceptions are logged and fail priming.
   - `retain` indexes one passage; `write_count` is 0 when the exact text is
-    already stored.
+    already stored. OpenIE extraction failures appear in error events even when
+    the passage was stored; the returned retain message is unchanged.
   - `recall` returns passages with their metadata; the event also records
     `scores` and `graph_seeds` (empty means HippoRAG fell back to dense passage
     retrieval).
@@ -532,6 +555,8 @@ Selected component presets:
   `python_package/pyproject.toml` overrides those pins with the versions the
   environment already uses; no other package's version changes. HippoRAG's
   OpenAI clients read `OPENAI_API_KEY`.
+  The performance preset requests JSON responses to reduce malformed extraction
+  output; extraction failures remain visible in memory-operation events.
 === "letta (external plugin)"
 
   [Letta](https://github.com/letta-ai/letta/tree/0.16.8) 0.16.8, the last Python
@@ -542,8 +567,8 @@ Selected component presets:
   `core_memory_replace`), archival memory (embedded passages, written with
   `archival_memory_insert` and searched with `archival_memory_search`), and recall
   memory (every message, searched with `conversation_search`). Unlike the other
-  backends, every operation is a message to that agent, and the agent decides what
-  it stores and what it searches for.
+  backends, the agent decides what it stores and searches for: every operation
+  except insert-mode priming is a message to that agent.
 
   | Field | Default | Meaning |
   |-------|---------|---------|
@@ -551,10 +576,13 @@ Selected component presets:
   | `embedding` | required | Letta embedding handle, such as `openai/text-embedding-3-small` |
   | `temperature` | `0.7` | Sampling temperature of the MemGPT agent; Letta sends 1.0 to OpenAI reasoning models regardless |
   | `reasoning_effort` | `null` | Reasoning effort for OpenAI reasoning models (o-series, `gpt-5*`); unset, Letta asks them for `high` |
-  | `write_tools` | the three write tools | Every priming or retain request must start with one of these; the agent chooses which |
+  | `write_tools` | the three write tools | Every agent-mode priming or retain request starts with one of these; the agent chooses which |
   | `search_tool` | `archival_memory_search` | Every recall request must start with this tool; recall returns archival hits only |
   | `block_limit` | `2000` | Character limit of each core memory block, the MemGPT paper's value |
   | `context_window` | `16000` | Tokens before Letta summarises older messages out of the agent's context |
+  | `max_output_tokens` | `4096` | Cap on each agent completion, not the whole multi-step operation |
+  | `prime_mode` | `insert` | `insert` writes groups directly into archival memory; `agent` preserves agent-managed ingestion |
+  | `passage_max_tokens` | `1024` | Insert-mode passage token cap including the date header, using `cl100k_base`; maximum 8191 |
   | `max_steps` | `20` | Agent steps per operation |
   | `persona` / `human` | Letta's default persona / empty | Initial core memory blocks; Letta's default human block names every user "Chad", so it starts empty |
   | `date_line` / `end_line` / `forget_line` | see the plugin | Messages framing a primed group and a delete request |
@@ -562,13 +590,20 @@ Selected component presets:
 
   How the contract maps onto MemGPT:
 
-  - `prime_memory_entries` sends one request per `ingest_group_id` group, turns
-    ordered by `ingest_order` in their `ingest_role` (a LoCoMo speaker B turn
-    enters as the agent's own reply) and prefixed with the speaker name, framed by
-    a date line and an end line. A Letta `run_first` tool rule makes the request
-    start with one of `write_tools`; the agent chooses which one and what to
-    write, and may make further edits. Each group is one retain event with
-    `is_priming: true` and the agent's `memory_calls`.
+  - `prime_memory_entries` handles each `ingest_group_id` group in benchmark order,
+    with turns ordered by `ingest_order`. In `insert` mode, each group becomes
+    archival passages in an archive attached to the agent: a repeated date line,
+    then turns prefixed with speaker names (or roles), with archival timestamps
+    from `ingest_timestamp_epoch` when supplied. Splits preserve the text and
+    include the header in the token cap; a cap too small for the header and next
+    character raises an error. Embedding calls still occur, but there are no agent
+    completions or conversation messages. In `agent` mode, the plugin sends one
+    request per group in its `ingest_role` (a LoCoMo speaker B turn enters as the
+    agent's own reply), framed by a date line and an end line. A Letta `run_first`
+    tool rule makes the request start with one of `write_tools`; the agent chooses
+    what to store in core or archival memory. Each group is one retain event with
+    `is_priming: true` and a `write_count` (passages in insert mode, tool calls in
+    agent mode); agent mode also records `memory_calls` and `stop_reason`.
   - `retain` sends the content as a user message under the same rule.
   - `recall` sends the query as a user message under rules that make the agent
     start with `search_tool` and then only search again or answer, so it cannot
@@ -590,8 +625,13 @@ Selected component presets:
   message log, a summary included, so later probes are independent of earlier
   ones and a probe cannot come back as a memory. Delete keeps the agent's memory
   edits. This is a benchmark choice, not MemGPT behaviour: a deployed MemGPT agent
-  keeps every message it receives. Priming and `retain` messages stay, since they
-  are what the agent is asked to remember.
+  keeps every message it receives. Agent-mode priming and `retain` messages stay,
+  since they are what the agent is asked to remember. Insert-mode priming bypasses
+  those ingestion decisions, so results from the two modes are not equivalent.
+
+  The plugin restores core-memory block-limit checks removed in Letta 0.16.7 and
+  rejects replacements with empty `old_content`, avoiding unbounded block growth.
+  On close, it deletes the agent and any archive it created for insert priming.
 
   The preset runs the MemGPT agent on `gpt-4o-mini`, whatever model the benchmark
   agent uses. Letta 0.16.8 lets a request start with any one of several tools only

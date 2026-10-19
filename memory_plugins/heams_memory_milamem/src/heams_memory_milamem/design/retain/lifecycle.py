@@ -169,7 +169,7 @@ class RetainLifecycle:
             judged_group = [canonical_record, candidate_result.top_record]
             try:
                 verdict = consolidation.judge_cluster(
-                    runtime.config.consolidation.llm_model, judged_group
+                    runtime.config.consolidation, judged_group
                 )
             except Exception:
                 # Fail open: an LLM outage shouldn't block retain().
