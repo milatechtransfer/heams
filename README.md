@@ -5,12 +5,29 @@
 [![Docs](https://github.com/milatechtransfer/heams/actions/workflows/docs.yml/badge.svg)](https://milatechtransfer.github.io/heams/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-HEAMS is an open framework for evaluating memory systems for
-AI agents. It measures both what memory adds to an agent (recalling, updating,
-and reusing information over long interactions) and what it risks for the user
-(leaking, keeping, or failing to forget personal information). Agents, memory
-systems, and benchmarks are declared in YAML, so comparing memory systems is a
-matter of listing more experiments in a run config.
+<p align="center">
+  <a href="python_package/docs/assets/teaser.pdf">
+    <img src="python_package/docs/assets/teaser.png" alt="HEAMS evaluates agent memory systems across performance, privacy, security, and user sovereignty, with efficiency measured on every benchmark" width="800">
+  </a>
+</p>
+
+HEAMS is an open framework for evaluating memory systems for AI agents
+*holistically*. By *holistic* we mean the benchmarks provide coverage for the five dimensions shown in the figure above:
+
+- **Performance**: task success, personalization, knowledge updating, and
+  learning from experience.
+- **Privacy**: ensuring that information is allowed to flow in accordance with contextual norms.
+- **Security**: robustness to adversarial inputs and attacks.
+- **User sovereignty**: transparency about what is stored, and the ability to
+  edit it, delete it, and set retention and recall policies.
+- **Efficiency**: tokens, cost, latency, and storage.
+
+Each dimension is measured with its own metrics and reported side by side
+rather than collapsed into a single score, so trade-offs stay visible. Memory
+systems plug in through a common interface with the agent.
+Agents, memory systems, and benchmarks are declared in YAML, so
+comparing memory systems is a matter of listing more experiments in a run
+config.
 
 Documentation: <https://milatechtransfer.github.io/heams/>
 
@@ -71,8 +88,6 @@ please cite this repository if you use the framework in your research: use the
 "Cite this repository" button on GitHub, or the metadata in
 [`CITATION.cff`](CITATION.cff).
 
-<!-- Replace the paragraph above with the paper's BibTeX once it is published. -->
-
 Please also cite the original paper of each benchmark you report. Several
 benchmarks are adapted to this framework's shared setup, so report numbers as
 obtained with this framework rather than comparing them directly with the
@@ -122,7 +137,6 @@ We thank Matt Harris and the team at Mozilla for their guidance
 and feedback throughout the collaboration, and our colleagues at Mila for their
 supervision, project management, and feedback on the design and results of this
 work.
-<!-- Name other people to thank here once the team confirms the list. -->
 
 ## Contact
 
