@@ -53,7 +53,7 @@ class BaseMemoryConfig(BaseModel):
 
     type: str = Field(
         ...,
-        description="The registry identifier for this memory system (e.g., 'basic_complete_memory_system', 'mem0').",
+        description="The registry identifier for this memory system (e.g., 'milamem', 'mem0').",
     )
     name: str = Field(
         default="agent_memory", description="Display name for telemetry and logging."

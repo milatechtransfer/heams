@@ -28,7 +28,6 @@ make run CONFIG=smoke_test_benchmark OUTPUT_DIR=results/smoke_test_benchmark
 make run CONFIG=smoke_test_memory_system OUTPUT_DIR=results/smoke_test_memory_system
 make run CONFIG=testing/locomo_smoke OUTPUT_DIR=results/locomo_smoke
 make run CONFIG=testing/long_mem_eval_smoke OUTPUT_DIR=results/long_mem_eval_smoke
-make run CONFIG=testing/evomemory_single_turn_smoke OUTPUT_DIR=results/evomemory_single_turn_smoke
 make run CONFIG=testing/transparency_smoke OUTPUT_DIR=results/transparency_smoke
 ```
 

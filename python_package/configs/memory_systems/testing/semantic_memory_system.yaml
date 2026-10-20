@@ -1,9 +1,0 @@
-id: semantic_memory_system
-backend_config:
-  type: basic_complete_memory_system
-  name: semantic_memory_system
-  top_k: 5
-  recall_strategy:
-    kind: semantic
-  dedup_strategy:
-    kind: semantic

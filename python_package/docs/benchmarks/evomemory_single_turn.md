@@ -65,11 +65,11 @@ the feedback turns. Only original task turns contribute to benchmark accuracy.
 
 ```sh
 uv run heams run \
-    --config configs/runs/testing/evomemory_single_turn_smoke.yaml \
-    --output-dir results/evomemory_single_turn_smoke
+    --config configs/runs/testing/evomemory_single_turn_medium.yaml \
+    --output-dir results/evomemory_single_turn_medium
 ```
 
-The smoke config limits execution to the first stream and its first two tasks. See
+The medium config limits execution to four streams and their first ten tasks. See
 [CLI](../cli.md) for shared options and results layout.
 
 ## Source and license

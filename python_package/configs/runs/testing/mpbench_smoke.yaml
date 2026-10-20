@@ -4,7 +4,3 @@ experiments:
     agent_config_file: testing/gpt4o_mini_recall_only_tool_use.yaml
     memory_system_config_file: testing/no_memory.yaml
     benchmark_config_file: testing/mpbench_smoke.yaml
-  - name: gpt4o_mini_basic_complete_memory_system_mpbench
-    agent_config_file: testing/gpt4o_mini_recall_only_tool_use.yaml
-    memory_system_config_file: testing/basic_complete_memory_system.yaml
-    benchmark_config_file: testing/mpbench_smoke.yaml

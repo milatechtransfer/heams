@@ -38,7 +38,6 @@ Attack classes (normalized): `explicit`, `conditional`, `compaction`, `fact`,
 |------|----------------|
 | Agent | `configs/agents/testing/gpt4o_mini_recall_only_tool_use.yaml` |
 | Memory (baseline) | `configs/memory_systems/testing/no_memory.yaml` |
-| Memory (file-backed) | `configs/memory_systems/testing/basic_complete_memory_system.yaml` |
 | Benchmark (smoke) | `configs/benchmarks/testing/mpbench_smoke.yaml` (`limit_per_class: 1`) |
 | Benchmark (default) | `configs/benchmarks/full_campaign/mpbench.yaml` (`limit_per_class: 10`) |
 | Run (smoke) | `configs/runs/testing/mpbench_smoke.yaml` |

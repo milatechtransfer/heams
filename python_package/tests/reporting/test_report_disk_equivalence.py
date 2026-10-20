@@ -89,7 +89,7 @@ def test_locomo_report_sections_survive_disk_round_trip() -> None:
         render_locomo_metrics_summary,
         [scenario],
         {scenario.id: [run]},
-        ["basic_complete_memory_system"],
+        ["milamem"],
     )
 
 
@@ -146,5 +146,5 @@ def test_transparency_report_sections_survive_disk_round_trip() -> None:
         render_transparency_metrics_summary,
         [scenario],
         {scenario.id: [run]},
-        ["basic_complete_memory_system"],
+        ["milamem"],
     )

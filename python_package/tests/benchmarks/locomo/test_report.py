@@ -64,7 +64,7 @@ def test_render_locomo_metrics_summary_break_accuracy_down_by_category() -> None
         render_locomo_metrics_summary(
             [scenario],
             {scenario.id: [run]},
-            ["basic_complete_memory_system"],
+            ["milamem"],
         )
     )
 
@@ -89,7 +89,7 @@ def test_render_locomo_metrics_summary_empty_without_runs() -> None:
     rendered = render_locomo_metrics_summary(
         [scenario],
         {},
-        ["basic_complete_memory_system"],
+        ["milamem"],
     )
 
     assert rendered == []

@@ -45,7 +45,6 @@ Abilities: `preference_following`, `instruction_following`,
 | Agent (laptop) | `configs/agents/testing/gpt4o_mini_recall_only_tool_use.yaml` (`openai:gpt-4o-mini`) |
 | Agent (campaign) | `configs/agents/campaigns/beam.yaml` (`openai:gpt-5.6-luna`, same settings as locomo/LME) |
 | Memory (baseline) | `configs/memory_systems/testing/no_memory.yaml` |
-| Memory (file-backed) | `configs/memory_systems/testing/basic_complete_memory_system.yaml` |
 | Benchmark (laptop smoke) | `configs/benchmarks/testing/beam_smoke.yaml` (`100K`, `limit: 1`, `limit_stimuli: 1`) |
 | Benchmark (campaign smoke) | `configs/benchmarks/smoke_campaign/beam_100k.yaml` (`limit: 1` conversation) |
 | Benchmark (full splits) | `configs/benchmarks/full_campaign/beam_100k.yaml` … `beam_10m.yaml` |

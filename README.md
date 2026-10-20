@@ -38,7 +38,6 @@ Documentation: <https://milatechtransfer.github.io/heams/>
 | `in_context` | Built in | Recalls the most recent history that fits a token budget |
 | `no_memory` | Built in | Stores nothing; the baseline |
 | `milamem` | Plugin | Two-store memory with deduplication, conflict resolution, consolidation, and LLM-judged deletion |
-| `basic_complete_memory_system` | Plugin | File-backed memory with configurable recall (BM25 by default), soft delete, and consolidation |
 | `mem0` | Plugin | Wraps [Mem0](https://github.com/mem0ai/mem0) |
 | `hipporag` | Plugin | Wraps [HippoRAG 2](https://github.com/OSU-NLP-Group/HippoRAG) |
 | `letta` | Plugin | Wraps a [Letta](https://github.com/letta-ai/letta) (MemGPT) agent; needs Postgres, see its [README](memory_plugins/heams_memory_letta/README.md) |

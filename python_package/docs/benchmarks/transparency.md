@@ -79,7 +79,6 @@ not used by the shipped run configs.
 |--------|------|
 | `configs/benchmarks/*/transparency*.yaml` | BEAM split, materialization and adapter limits, audit prompt, evaluator |
 | `configs/agents/testing/transparency_gpt4o_mini_recall_only_tool_use.yaml` | Instructions + `memory_strategy: recall_only_tool_use` |
-| `configs/memory_systems/testing/basic_complete_memory_system_transparency.yaml` | `top_k: 50` |
 | `configs/runs/testing/transparency_smoke.yaml` | Experiment tuples (agent + memory + benchmark) |
 
 Benchmark code does **not** overlay agent/memory after resolution. Policy that

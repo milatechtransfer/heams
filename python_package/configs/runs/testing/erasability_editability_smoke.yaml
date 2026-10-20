@@ -4,11 +4,3 @@ experiments:
     agent_config_file: testing/gpt4o_mini_tool_use.yaml
     memory_system_config_file: testing/no_memory.yaml
     benchmark_config_file: testing/erasability_editability_smoke.yaml
-  - name: gpt4o_mini_basic_complete_memory_system_ee
-    agent_config_file: testing/erasability_editability_gpt4o_mini_tool_use.yaml
-    memory_system_config_file: testing/basic_complete_memory_system.yaml
-    benchmark_config_file: testing/erasability_editability_smoke.yaml
-  - name: gpt4o_mini_semantic_memory_system_ee
-    agent_config_file: testing/erasability_editability_gpt4o_mini_tool_use.yaml
-    memory_system_config_file: testing/semantic_memory_system.yaml
-    benchmark_config_file: testing/erasability_editability_smoke.yaml

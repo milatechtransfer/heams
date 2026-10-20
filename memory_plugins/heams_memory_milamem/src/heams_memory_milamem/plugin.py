@@ -6,10 +6,6 @@ from heams.memory_systems.api import (
     MemoryRuntimeContext,
 )
 
-from .basic_complete_memory_system import (
-    BasicCompleteMemorySystem,
-    BasicCompleteMemorySystemConfig,
-)
 from .milamem import MilaMemConfig, MilaMemMemorySystem
 
 
@@ -32,11 +28,4 @@ milamem_plugin = MemoryPlugin(
     display_name="MilaMem",
     config_model=MilaMemConfig,
     create=_factory(MilaMemMemorySystem),
-)
-
-basic_complete_plugin = MemoryPlugin(
-    type_name="basic_complete_memory_system",
-    display_name="Basic complete memory",
-    config_model=BasicCompleteMemorySystemConfig,
-    create=_factory(BasicCompleteMemorySystem),
 )

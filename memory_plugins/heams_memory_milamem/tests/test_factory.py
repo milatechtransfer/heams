@@ -14,8 +14,6 @@ from heams.orchestration.scenario_runtime import (
 )
 from heams.scenarios import Scenario, UserStimulus
 from heams_memory_milamem import (
-    BasicCompleteMemorySystem,
-    BasicCompleteMemorySystemConfig,
     MilaMemConfig,
     MilaMemMemorySystem,
 )
@@ -23,45 +21,13 @@ from heams_memory_milamem import (
 CORE_CONFIGS_DIR = Path(__file__).resolve().parents[3] / "python_package" / "configs"
 
 
-def test_basic_complete_config_dispatches_to_backend(tmp_path) -> None:
-    config = BasicCompleteMemorySystemConfig(name="t", top_k=3)
-    original_config = config.model_dump()
-
-    memory = create_memory(config, storage_dir=tmp_path)
-
-    assert isinstance(memory, BasicCompleteMemorySystem)
-    assert memory.storage_dir == tmp_path
-    assert config.model_dump() == original_config
-    assert memory.config.name == "t"
-    assert memory.config.top_k == 3
-    assert memory.config.file_path == str(tmp_path / "memory.json")
-
-
-def test_basic_complete_retains_and_recalls_through_factory(tmp_path) -> None:
-    memory = create_memory(
-        BasicCompleteMemorySystemConfig(top_k=2),
-        storage_dir=tmp_path,
-    )
-
-    memory.retain("a")
-    memory.retain("b")
-    memory.retain("c")
-
-    assert memory.recall("") == ["b", "c"]
-    assert (tmp_path / "memory.json").exists()
-
-
 def test_memory_system_config_union_resolves_plugin_types() -> None:
     adapter = TypeAdapter(MemorySystemConfig)
 
     milamem = adapter.validate_python({"type": "milamem", "top_k": 4})
-    basic_complete = adapter.validate_python(
-        {"type": "basic_complete_memory_system", "top_k": 4}
-    )
 
     assert isinstance(milamem, MilaMemConfig)
-    assert isinstance(basic_complete, BasicCompleteMemorySystemConfig)
-    assert milamem.top_k == basic_complete.top_k == 4
+    assert milamem.top_k == 4
 
 
 def test_milamem_config_dispatches_to_backend(tmp_path) -> None:

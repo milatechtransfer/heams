@@ -17,7 +17,6 @@ plugins in `memory_plugins/` (see [External memory plugins](#external-memory-plu
 | ID | Plugin package | Description |
 |----|----------------|-------------|
 | `milamem` | `heams-memory-milamem` | Raw + canonical dual-store memory: windowed retain-time dedup/conflict resolution, a clustering + LLM-judged `consolidate()` backstop, and LLM-judged logical delete |
-| `basic_complete_memory_system` | `heams-memory-milamem` | File-backed deterministic memory with configurable recall (BM25 by default), soft delete, and consolidation |
 | `mem0` | `heams-memory-mem0` | Wraps the open-source Mem0 library |
 | `hipporag` | `heams-memory-hipporag` | Wraps HippoRAG 2 |
 | `letta` | `heams-memory-letta` | Wraps a Letta (MemGPT) agent |
@@ -172,8 +171,7 @@ join the shared ruleset, an active recall layer applies them too. Backends not
 wrapped by a `privacy_config` raise `NotImplementedError`.
 
 The retention-policy benchmark uses this to run all of its policies against
-one memory-system config. See `configs/memory_systems/retention_rules.yaml`,
-which `datasets/retention_policy/make_configs.py` generates.
+one memory-system config.
 
 ## External memory plugins
 
@@ -217,17 +215,10 @@ Selected component presets:
 |------|---------|---|
 | `configs/memory_systems/testing/no_memory.yaml` | `no_memory` | n/a |
 | `configs/memory_systems/campaigns/in_context.yaml` | `in_context` | n/a |
-| `configs/memory_systems/testing/basic_complete_memory_system.yaml` | `basic_complete_memory_system` | bm25 / bm25 |
-| `configs/memory_systems/testing/semantic_memory_system.yaml` | `basic_complete_memory_system` | semantic / semantic |
 | `configs/memory_systems/campaigns/milamem.yaml` | `milamem` | hybrid / semantic |
 | `configs/memory_systems/campaigns/mem0.yaml` | `mem0` | provider-defined |
 | `configs/memory_systems/campaigns/hipporag_openai.yaml` | `hipporag` | provider-defined |
 | `configs/memory_systems/campaigns/letta_openai.yaml` | `letta` | agent-defined |
-
-`testing/basic_complete_memory_system.yaml` and
-`testing/semantic_memory_system.yaml` are the same backend with different
-`recall_strategy`/`dedup_strategy` settings. Reference both from a run config's
-`experiments:` list to compare them head-to-head.
 
 For MilaMem, set `backend_config.priming_speaker_prefix: true` to prefix newly
 primed content with the name from `ingest_speaker_name` or, as a fallback,
@@ -238,186 +229,6 @@ labels are not used as names. Metadata and turn boundaries are preserved, and
 an existing matching prefix is not repeated. This affects priming only: normal
 `retain` calls and previously stored memories are unchanged. Keep the option
 disabled when reproducing runs that did not use speaker prefixes.
-
-Example memory-system file:
-
-```yaml
-id: basic_complete_memory_system
-backend_config:
-  type: basic_complete_memory_system
-  name: basic_complete_memory_system
-  top_k: 5
-  recall_strategy:
-    kind: bm25
-  dedup_strategy:
-    kind: bm25
-```
-
-Example privacy-wrapped variant:
-
-```yaml
-id: basic_complete_memory_system_privacy
-backend_config:
-  type: basic_complete_memory_system
-  name: basic_complete_memory_system_privacy
-  top_k: 5
-  recall_strategy:
-    kind: bm25
-  dedup_strategy:
-    kind: bm25
-privacy_config:
-  enabled: true
-  retention:
-    enabled: true
-    mode: deterministic
-  rules:
-    - rule_id: drop-explicitly-private-metadata
-      metadata_equals:
-        private: true
-```
-
-Example hybrid variant (same rules, but every rule match is LLM-verified
-before it's dropped, and entries no rule matched are judged independently):
-
-```yaml
-id: basic_complete_memory_system_retention_hybrid
-backend_config:
-  type: basic_complete_memory_system
-  name: basic_complete_memory_system_retention_hybrid
-  top_k: 5
-  recall_strategy:
-    kind: bm25
-  dedup_strategy:
-    kind: bm25
-privacy_config:
-  enabled: true
-  retention:
-    enabled: true
-    mode: hybrid
-    llm_model: openai:gpt-4o-mini
-  rules:
-    - rule_id: drop-explicitly-private-metadata
-      category_description: "explicitly private entries (metadata-flagged)"
-      metadata_equals:
-        private: true
-```
-
-Example pure-`llm` variant (no rule matching at all -- the shared `rules`
-is only read for `category_description`, the matcher below is never
-evaluated):
-
-```yaml
-id: basic_complete_memory_system_retention_llm
-backend_config:
-  type: basic_complete_memory_system
-  name: basic_complete_memory_system_retention_llm
-  top_k: 5
-  recall_strategy:
-    kind: bm25
-  dedup_strategy:
-    kind: bm25
-privacy_config:
-  enabled: true
-  retention:
-    enabled: true
-    mode: llm
-    llm_model: openai:gpt-4o-mini
-    policies:
-      - "do not record my medical info"
-  rules:
-    - rule_id: drop-explicitly-private-metadata
-      category_description: "explicitly private entries (metadata-flagged)"
-      metadata_equals:
-        private: true
-```
-
-Example hybrid recall variant (read-time gate; `rules` is the same shared
-`PrivacyConfig.rules` field retention reads, applied at recall instead of
-retain):
-
-```yaml
-id: basic_complete_memory_system_recall_hybrid
-backend_config:
-  type: basic_complete_memory_system
-  name: basic_complete_memory_system_recall_hybrid
-  top_k: 5
-  recall_strategy:
-    kind: bm25
-  dedup_strategy:
-    kind: bm25
-privacy_config:
-  enabled: true
-  recall:
-    enabled: true
-    mode: hybrid
-    window_multiplier: 4
-    llm_model: openai:gpt-4o-mini
-  rules:
-    - rule_id: explicitly-private-metadata
-      category_description: "explicitly private entries (metadata-flagged)"
-      metadata_equals:
-        private: true
-```
-
-Example pure-`llm` recall variant (no rule matching at all, same
-relationship to hybrid recall as retention's `llm` mode has to `hybrid`):
-
-```yaml
-id: basic_complete_memory_system_recall_llm
-backend_config:
-  type: basic_complete_memory_system
-  name: basic_complete_memory_system_recall_llm
-  top_k: 5
-  recall_strategy:
-    kind: bm25
-  dedup_strategy:
-    kind: bm25
-privacy_config:
-  enabled: true
-  recall:
-    enabled: true
-    mode: llm
-    window_multiplier: 4
-    llm_model: openai:gpt-4o-mini
-    policies:
-      - "do not expose my travel plans to anyone but family"
-  rules:
-    - rule_id: explicitly-private-metadata
-      category_description: "explicitly private entries (metadata-flagged)"
-      metadata_equals:
-        private: true
-```
-
-=== "basic_complete_memory_system (external plugin)"
-
-  Append-only raw-record storage with a pluggable recall strategy, soft
-  deletion, and retain-time duplicate/conflict resolution via a pluggable
-  dedup strategy, backed by a JSON persistence file. Its
-  `BasicCompleteMemorySystemConfig` adds the backend-local `file_path` field.
-  For normal runs, orchestration supplies a scenario-scoped `storage_dir` and
-  the config resolves that field to `<storage_dir>/memory.json`.
-
-  Two nested config knobs, both optional (default to `bm25`, matching the
-  original behavior exactly):
-
-  | Field | Default | Meaning |
-  |-------|---------|---------|
-  | `recall_strategy.kind` | `bm25` | How `recall()` ranks stored entries against a query: `bm25`, `semantic`, `hybrid`, or `rerank` |
-  | `dedup_strategy.kind` | `bm25` | How `retain()` finds candidate near-duplicates/conflicts to check before writing: `bm25` or `semantic` |
-
-  The candidate-lookup mechanism is independent of the actual duplicate/
-  conflict *decision* (exact-text match for duplicates, `"X is Y"` subject/
-  value comparison for conflicts) — that decision logic is the same
-  regardless of which strategy finds the candidates. Non-`bm25` strategies
-  derive an embedding model and cache embeddings to a sibling
-  `*.embeddings.json` file (only created for non-`bm25` kinds).
-
-  `recall_strategy` also accepts `embed_model`, `hybrid_weight` (hybrid only),
-  `cross_encoder_model`/`rerank_candidate_k` (rerank only); `dedup_strategy`
-  also accepts `embed_model`/`candidate_k` — all optional, each strategy's own
-  defaults apply when omitted. The testing basic and semantic presets provide
-  the two ends of that spectrum; to try `hybrid`/`rerank`, copy either one under
-  a new `id` and edit the `kind` value(s).
 
 === "milamem (external plugin)"
 
@@ -851,39 +662,9 @@ privacy_config:
 
 ## Comparing backends with an experiment matrix
 
-`configs/runs/testing/locomo_smoke.yaml` and
-`configs/runs/testing/long_mem_eval_smoke.yaml` compare `no_memory` vs
-`basic_complete_memory_system` by listing two experiments. The LongMemEval
-smoke run is invoked with:
-
-```sh
-cd python_package
-make run CONFIG=testing/long_mem_eval_smoke OUTPUT_DIR=results/long_mem_eval_smoke
-```
-
-The LoCoMo smoke run (`configs/runs/testing/locomo_smoke.yaml`) has this
-experiment matrix:
-
-```yaml
-run_name: locomo_smoke
-experiments:
-  - name: gpt4o_mini_nomemory_locomo
-    agent_config_file: testing/gpt4o_mini_recall_only_tool_use.yaml
-    memory_system_config_file: testing/no_memory.yaml
-    benchmark_config_file: testing/locomo_smoke.yaml
-  - name: gpt4o_mini_basic_complete_memory_system_locomo
-    agent_config_file: testing/gpt4o_mini_recall_only_tool_use.yaml
-    memory_system_config_file: testing/basic_complete_memory_system.yaml
-    benchmark_config_file: testing/locomo_smoke.yaml
-```
-
-```sh
-cd python_package
-make run CONFIG=testing/locomo_smoke OUTPUT_DIR=results/locomo_smoke
-```
-
-Then run `uv run heams generate-report --results-dir results/locomo_smoke` to write
-a `report.md` for each experiment. See [Understanding results](results.md).
+`configs/runs/examples/compare_memory_systems.yaml` compares `no_memory`,
+`in_context`, and the example plugin on one LoCoMo question by listing three
+experiments.
 
 A custom comparison can follow the same pattern: create a run config with two
 experiments that share a benchmark and point at the memory-system variants being
@@ -901,9 +682,9 @@ Scenario runtime creates that directory and passes it to
 `create_memory(storage_dir=...)`. The factory forwards the authored config and
 runtime directory to the backend; `BaseMemorySystem` resolves the live config
 through `config.with_runtime_storage(storage_dir)`. Each persistent config
-therefore owns its internal layout. Basic Complete uses
-`memory.json`, canonical memory uses `raw.json`, `canonical.json`, and an
-optional sibling embedding cache, and Mem0 owns the directory itself.
+therefore owns its internal layout. Canonical memory uses `raw.json`,
+`canonical.json`, and an optional sibling embedding cache, and Mem0 owns the
+directory itself.
 `in_context` and `no_memory` leave their configs unchanged. Runtime persistence
 paths should not be set in normal CLI component YAML and are not selected with
 CLI flags. The run output root is selected with `heams run --output-dir`.

@@ -3,7 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-import yaml
 
 from heams.benchmarks.factory import create_benchmark
 from heams.benchmarks.retention_policy.config import RetentionPolicyBenchmarkConfig
@@ -17,7 +16,6 @@ from tests.benchmarks.retention_policy.fixtures import (
     _memory,
     _run,
 )
-from tests.paths import PACKAGE_ROOT
 
 
 def _write_dataset(tmp_path: Path, rows: list[dict]) -> Path:
@@ -230,39 +228,6 @@ def test_memory_manipulation_rejects_commands_outside_the_allowlist(tmp_path):
             eval_cfg=eval_cfg,
             build_ground_truth=lambda s, c: c.to_ground_truth(s),
         )
-
-
-def _committed_privacy_config(name: str) -> PrivacyConfig:
-    # Only the privacy block: validating the whole variant would also need the
-    # backend's plugin installed, which core tests must not depend on.
-    doc = yaml.safe_load(
-        (PACKAGE_ROOT / "configs" / "memory_systems" / f"{name}.yaml").read_text(
-            encoding="utf-8"
-        )
-    )
-    return PrivacyConfig.model_validate(doc["privacy_config"])
-
-
-def test_one_memory_config_enforces_whichever_policy_each_sample_sets(tmp_path):
-    """The committed config scores every policy: each sample drops only its own category."""
-    benchmark = create_benchmark(_load_config("retention_policy"))
-    privacy = _committed_privacy_config("retention_rules")
-
-    for index, sample in enumerate(benchmark.samples):
-        audit = _run(sample, _memory(tmp_path / str(index), privacy))
-        dropped = {
-            record.tags["category"]
-            for record in audit.report_records
-            if record.observed == "drop"
-        }
-        prohibited = {
-            fact.category
-            for fact in sample.ground_truth.facts
-            if fact.expected == "drop"
-        }
-        # Keyword rules leak some prohibited facts, so assert the sample's
-        # policy reached the layer (its category is blocked), not a perfect score.
-        assert prohibited <= dropped, sample.id
 
 
 def test_policy_missing_from_policy_rules_fails_the_scenario(tmp_path):
