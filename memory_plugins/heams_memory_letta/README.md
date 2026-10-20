@@ -14,47 +14,38 @@ the agent, which decides what to store and search for. See the "letta (external 
 
 It is the last Python release of the Letta server. Unpinned, `letta` on PyPI is now
 Letta Code (0.32+), a terminal app with no agents API. 0.16.8 is Postgres-only, and
-the plugin hosts Letta's own app inside the benchmark process, so there is a database
-to set up but no Letta server to start.
+the plugin hosts Letta's own app inside the benchmark process, so there is no Letta
+server to start; the plugin starts the database itself.
 
-## One-time setup
+## Setup
 
-From the repository root, on macOS with Homebrew:
+From the repository root:
 
 ```sh
-# 1. Postgres 17 + pgvector, running in the background
-brew install postgresql@17 pgvector
-brew services start postgresql@17
-export PATH="/opt/homebrew/opt/postgresql@17/bin:$PATH"   # the formula is keg-only
-
-# 2. the database Letta uses
-createdb letta
-psql -d letta -c 'create extension if not exists vector'
-
-# 3. the plugin's environment (also installable with `uv sync --extra letta`
-#    from python_package)
 make -C memory_plugins/heams_memory_letta setup
-
-# 4. Letta's schema, from the migrations at the same tag; the pip package omits them
-REPO=$PWD
-git clone --depth 1 -b 0.16.8 https://github.com/letta-ai/letta.git /tmp/letta-0.16.8
-(cd /tmp/letta-0.16.8 && LETTA_PG_URI=postgresql://localhost:5432/letta \
-    "$REPO/memory_plugins/heams_memory_letta/.venv/bin/alembic" upgrade head)
 ```
 
-Check it: `psql -d letta -Atc 'select version_num from alembic_version'` prints
-`1c28e167b74f`.
-
-Then set the database and the model provider's key in the repository `.env`:
+Then set the model provider's key in the repository `.env`:
 
 ```sh
-LETTA_PG_URI=postgresql://localhost:5432/letta
 OPENAI_API_KEY=...
 ```
 
-To start over, `dropdb letta` and repeat steps 2 and 4. Every memory instance creates
-its own agent and deletes it and any plugin-created archive on close, so resources
-left in the database by an interrupted run never affect a result.
+That is all `heams run` needs, locally and on the cluster.
+
+Letta 0.16.8 runs only on Postgres with pgvector, so each benchmark process starts a
+private database and deletes it on exit; concurrent runs never share one.
+PostgreSQL 17 and pgvector come from the [`pgembed`](https://github.com/Ladybug-Memory/pgembed)
+wheel. Letta's schema comes from its Alembic migrations at the 0.16.8 tag, which the
+pip package omits: `setup` downloads them once into
+`~/.cache/heams-memory-letta/` (or `$XDG_CACHE_HOME`), checks the archive's SHA-256,
+and starts a database to check that everything works. Starting a database adds
+a few seconds to a run. If the migrations are missing, the first run downloads them.
+
+To use an existing database instead, set `LETTA_PG_URI` to a Postgres with pgvector
+and Letta's schema. Every memory instance creates its own agent and deletes it and
+any plugin-created archive on close, so resources left in that database by an
+interrupted run never affect a result.
 
 ## Tests
 
@@ -65,7 +56,7 @@ make -C memory_plugins/heams_memory_letta test      # both
 ```
 
 `test-ci` covers both priming modes with a fake client. It makes no model calls and
-starts no database. `test-live`
+starts no database. `test-live` needs `OPENAI_API_KEY`, starts a private database, and
 uses the campaign preset's priming mode (insert by default); it is not needed for
 unit validation.
 
@@ -85,11 +76,13 @@ unit validation.
   `max_output_tokens: 4096` caps each agent completion, not the whole multi-step
   operation. The plugin also restores Letta's core-block character-limit checks and
   rejects `core_memory_replace` with empty `old_content`.
-- **Cluster Postgres.** `python_package/cluster/letta/run_with_postgres.sh` uses a
-  unique database copy under `SLURM_TMPDIR` when available, otherwise under
-  `$LETTA_PG_ROOT/jobs`. Connections use its Unix socket. Cleanup discards the copy
-  and preserves its Postgres log at `$LETTA_PG_ROOT/logs/<job_id>.log`; no campaign
-  wiring changes are required.
+- **The private database.** Its files live under `SLURM_TMPDIR` when set (node-local
+  on the cluster), otherwise the system temp directory, and Letta connects through a
+  Unix socket under `/tmp`. Crash safety is off, since the database is discarded. It
+  requires a password even locally, because compute nodes are shared. It is stopped
+  and deleted on a normal exit, Ctrl-C, or `SIGTERM` (such as a Slurm time limit). A
+  process killed with `SIGKILL` cannot stop it; Slurm normally ends a job's
+  processes, and locally `pkill -f pgembed/pginstall/bin/postgres` does.
 - **Dependency overrides.** Letta pins OpenTelemetry, `mcp`, `uvicorn`, `websockets`
   and `docstring-parser` to versions older than `python_package`'s; resolved as
   pinned they downgrade the benchmark agent's own dependencies. Both this package

@@ -41,7 +41,7 @@ Documentation: <https://milatechtransfer.github.io/heams/>
 | `basic_complete_memory_system` | Plugin | File-backed memory with configurable recall (BM25 by default), soft delete, and consolidation |
 | `mem0` | Plugin | Wraps [Mem0](https://github.com/mem0ai/mem0) |
 | `hipporag` | Plugin | Wraps [HippoRAG 2](https://github.com/OSU-NLP-Group/HippoRAG) |
-| `letta` | Plugin | Wraps a [Letta](https://github.com/letta-ai/letta) (MemGPT) agent; needs Postgres, see its [README](memory_plugins/heams_memory_letta/README.md) |
+| `letta` | Plugin | Wraps a [Letta](https://github.com/letta-ai/letta) (MemGPT) agent; see its [README](memory_plugins/heams_memory_letta/README.md) |
 | `example.in_memory` | Plugin | Minimal example to copy when writing your own |
 
 `make setup` installs all the plugins. Run `uv run heams memory list` (from

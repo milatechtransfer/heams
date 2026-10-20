@@ -51,22 +51,6 @@ esac
 [ "$CPUS_PER_TASK" -gt 0 ] || { echo "CPUS_PER_TASK must be positive." >&2; exit 2; }
 
 run_command="uv run --python 3.12 heams run"
-if [ -n "${RUN_WRAPPER:-}" ]; then
-  case "$RUN_WRAPPER" in
-    cluster/*.sh) ;;
-    *) echo "RUN_WRAPPER must be a .sh script under cluster/: $RUN_WRAPPER" >&2; exit 2 ;;
-  esac
-  if [[ "$RUN_WRAPPER" =~ (^|/)\.\.($|/) ]]; then
-    echo "RUN_WRAPPER must not contain parent-directory paths: $RUN_WRAPPER" >&2
-    exit 2
-  fi
-  [ -f "$REMOTE_REPO/python_package/$RUN_WRAPPER" ] || {
-    echo "RUN_WRAPPER not found: $RUN_WRAPPER" >&2
-    exit 2
-  }
-  # The wrapper receives heams run's arguments and runs heams itself.
-  run_command="bash $(printf '%q' "$RUN_WRAPPER")"
-fi
 
 campaign_instance="${CAMPAIGN_NAME}_$(date -u +%Y%m%d-%H%M%S)-$(uuidgen | tr '[:upper:]' '[:lower:]' | tr -d '-' | cut -c1-8)"
 campaign_run_dir="$campaign_output_dir/$campaign_instance"

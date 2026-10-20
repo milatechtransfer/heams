@@ -5,6 +5,8 @@ UV_RUN ?= uv run --python $(PYTHON_VERSION)
 
 setup:
 	uv sync --dev --python $(PYTHON_VERSION)
+	# Downloads Letta's migrations and checks that a private database starts.
+	$(UV_RUN) python -m heams_memory_letta
 
 test:
 	$(UV_RUN) pytest tests
