@@ -1,0 +1,18 @@
+# Dependabot security updates are enabled in the repository settings.
+# This file groups the python_package ones into a single PR instead of one
+# PR per package, since every bump edits the same uv.lock and they conflict.
+#
+# open-pull-requests-limit: 0 turns off routine version updates, so PRs are
+# only opened for security advisories.
+version: 2
+updates:
+  - package-ecosystem: "uv"
+    directory: "/python_package"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    groups:
+      security:
+        applies-to: security-updates
+        patterns:
+          - "*"
