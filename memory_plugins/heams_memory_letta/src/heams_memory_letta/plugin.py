@@ -2,8 +2,8 @@
 memory, driven through Letta's REST routes.
 
 Letta's own FastAPI app is hosted in this process, so every call runs the same routes
-and code as `letta server`, without a port. Letta 0.16.8 is Postgres-only; the plugin
-README covers the one-time database setup.
+and code as `letta server`, without a port. Letta 0.16.8 is Postgres-only; unless
+`pg_uri_env` names a database, the plugin starts a private one (see `database.py`).
 
 Priming defaults to inserting groups directly into archival memory as passages, without
 an agent completion. With `prime_mode="agent"`, each group is a message to the agent.
@@ -50,7 +50,7 @@ from heams.memory_systems.api import (
 )
 from pydantic import Field
 
-LETTA_VERSION = "0.16.8"
+from .database import LETTA_VERSION, local_database_uri
 
 # text-embedding-3-* per-input cap and tokenizer, as in MilaMem.
 _MAX_EMBED_INPUT_TOKENS = 8191
@@ -323,22 +323,19 @@ def _letta_client(pg_uri_env: str) -> Any:
     """Letta's app, hosted once per process and shared by every memory instance.
 
     Letta builds its database engine from global settings at import, so a process can
-    host only one database; a memory instance pointing elsewhere is refused."""
+    host only one database; a memory instance pointing elsewhere is refused. With
+    `pg_uri_env` unset, Letta runs on a private database the plugin starts."""
     global _client, _client_uri
-    pg_uri = os.environ.get(pg_uri_env)
-    if not pg_uri:
-        raise RuntimeError(
-            f"Letta {LETTA_VERSION} needs Postgres with pgvector; set "
-            f"{pg_uri_env} to its URI (see memory_plugins/heams_memory_letta/README.md)."
-        )
+    requested = os.environ.get(pg_uri_env)
     with _client_lock:
-        if _client is not None and pg_uri != _client_uri:
+        if _client is not None and requested and requested != _client_uri:
             raise RuntimeError(
                 f"Letta is already running on another database in this process; "
                 f"{pg_uri_env} must hold the same URI. Run variants with different "
                 "databases as separate runs."
             )
         if _client is None:
+            pg_uri = requested or local_database_uri()
             # Read by Letta's settings when its server module is first imported.
             os.environ["LETTA_PG_URI"] = pg_uri
             root_level = logging.getLogger().level
@@ -355,9 +352,10 @@ def _letta_client(pg_uri_env: str) -> Any:
             try:
                 client = TestClient(app).__enter__()  # runs Letta's startup
             except Exception as exc:
-                raise RuntimeError(
-                    f"Letta could not start against the database in {pg_uri_env}: {exc}"
-                ) from exc
+                database = (
+                    f"the database in {pg_uri_env}" if requested else "its private database"
+                )
+                raise RuntimeError(f"Letta could not start against {database}: {exc}") from exc
             _client, _client_uri = client, pg_uri
     return _client
 
@@ -562,7 +560,10 @@ class LettaMemoryConfig(BaseMemoryConfig):
     )
     pg_uri_env: str = Field(
         default="LETTA_PG_URI",
-        description="Environment variable holding the Postgres URI Letta uses.",
+        description=(
+            "Environment variable holding the URI of an existing Postgres for Letta. "
+            "Unset, the plugin starts a private database for the process."
+        ),
     )
 
 

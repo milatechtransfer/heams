@@ -46,10 +46,7 @@ earlier entries were already submitted. The
 campaign definition sets one shared resource profile for all of its run configs:
 `SLURM_TIME`, `CPUS_PER_TASK`, `MEM_PER_TASK`, and optional `GRES` (for example
 `gpu:1`). Define a separate campaign when runs need different resource
-profiles. An optional `RUN_WRAPPER` names a script under `cluster/` that each job
-runs instead of `uv run heams run`, with the same arguments; Letta campaigns use
-`cluster/letta/run_with_postgres.sh` to start a job-local Postgres (one-time setup:
-`cluster/letta/setup_postgres.sh`).
+profiles.
 
 ## Cluster settings
 
@@ -61,7 +58,6 @@ in your environment, for example in your shell profile on the cluster:
 | `PARTITION` | Slurm partition for every job. When unset, Slurm uses the cluster's default (or `SBATCH_PARTITION`) |
 | `SLURM_ACCOUNT` | Slurm account to charge. When unset, no `--account` is passed |
 | `GRES` | Generic resources passed as `--gres`, for example `gpu:1` for runs that embed on a GPU. When unset, no `--gres` is passed |
-| `RUN_WRAPPER` | A script under `cluster/` that each job runs instead of `uv run --python 3.12 heams run`; it receives the same `--config` and `--output-dir` arguments and runs `heams` itself. For example, `cluster/letta/run_with_postgres.sh` starts a private Postgres for Letta jobs |
 
 A campaign file may still set these itself; a value set there overrides the
 environment.
@@ -79,6 +75,9 @@ $EDITOR .env
 
 cd python_package
 make setup
+# Letta campaigns only: download Letta's migrations while there is network access,
+# and check that a private database starts
+uv run --python 3.12 python -m heams_memory_letta
 ```
 
 The `.env` file supplies credentials such as `OPENAI_API_KEY`; it is ignored by

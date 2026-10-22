@@ -586,7 +586,7 @@ disabled when reproducing runs that did not use speaker prefixes.
   | `max_steps` | `20` | Agent steps per operation |
   | `persona` / `human` | Letta's default persona / empty | Initial core memory blocks; Letta's default human block names every user "Chad", so it starts empty |
   | `date_line` / `end_line` / `forget_line` | see the plugin | Messages framing a primed group and a delete request |
-  | `pg_uri_env` | `LETTA_PG_URI` | Environment variable holding the Postgres URI |
+  | `pg_uri_env` | `LETTA_PG_URI` | Environment variable holding the URI of an existing Postgres; unset, the plugin starts a private one |
 
   How the contract maps onto MemGPT:
 
@@ -639,10 +639,11 @@ disabled when reproducing runs that did not use speaker prefixes.
   single tool, and with `archival_memory_insert` alone the agent was not seen to
   edit core memory, the only place MemGPT can update a stored fact.
 
-  Letta 0.16.8 is Postgres-only. It needs Postgres with the pgvector extension and
-  Letta's schema, created once from the release's migrations; see
-  `memory_plugins/heams_memory_letta/README.md`. The plugin hosts Letta's own app
-  inside the benchmark process, so no Letta server is started. Without the
+  Letta 0.16.8 is Postgres-only. Unless `pg_uri_env` names an existing database,
+  each benchmark process starts a private Postgres with pgvector and Letta's schema,
+  and deletes it on exit; see `memory_plugins/heams_memory_letta/README.md`. The
+  plugin hosts Letta's own app inside the benchmark process, so no Letta server is
+  started. Without the
   required `model` and `embedding` fields, `heams memory test` reports
   `setup-required`.
 
