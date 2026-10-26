@@ -1,4 +1,4 @@
-"""Live check of the Letta preset against Postgres and the model provider.
+"""Live check of the Letta preset on a private Postgres and the model provider.
 
 Runs the campaign preset through one small LoCoMo-shaped session and one recall, so a
 broken setup fails in about a minute instead of partway through a LoCoMo ingestion.
@@ -27,8 +27,7 @@ CONFIG = LettaMemoryConfig.model_validate(
 pytestmark = [
     pytest.mark.integration,
     pytest.mark.skipif(
-        not os.environ.get(CONFIG.pg_uri_env) or not os.environ.get("OPENAI_API_KEY"),
-        reason=f"needs {CONFIG.pg_uri_env} and OPENAI_API_KEY",
+        not os.environ.get("OPENAI_API_KEY"), reason="needs OPENAI_API_KEY"
     ),
 ]
 

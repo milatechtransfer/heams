@@ -152,7 +152,7 @@ The CLI calls `load_dotenv()` on startup. Common variables:
 |----------|----------|
 | `OPENAI_API_KEY` | The bundled OpenAI agents and every LLM judge (default `gpt-4o-mini`) |
 | `HF_TOKEN` | Gated Hugging Face datasets (GPQA, used by Evo-Memory) |
-| `LETTA_PG_URI` | Postgres for the `letta` memory plugin (see its README) |
+| `LETTA_PG_URI` | Optional: an existing Postgres for the `letta` memory plugin; unset, it starts a private one (see its README) |
 
 Place a `.env` file at the project root or `python_package/` (pytest also loads
 `../.env`).

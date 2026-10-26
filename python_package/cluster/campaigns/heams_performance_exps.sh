@@ -2,7 +2,7 @@
 # Cluster-specific settings (PARTITION, SLURM_ACCOUNT) come from the environment;
 # see docs/cluster.md.
 # BEAM 1M with deterministic recall, one Slurm job per memory system (run in parallel).
-# Letta needs a job-local Postgres, so it runs from heams_performance_exps_letta.sh.
+# Letta runs from heams_performance_exps_letta.sh.
 
 CAMPAIGN_NAME="heams_performance_exps"
 # HippoRAG ingests ~6s/passage (~85 min per conversation, ~50h for 35); resubmit to resume.
