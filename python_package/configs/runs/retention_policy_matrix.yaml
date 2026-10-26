@@ -1,0 +1,8 @@
+# The full 12 x 12 matrix as one experiment: each sample sets its own policy on
+# the memory system.
+run_name: retention_policy_matrix
+experiments:
+  - name: milamem_retention_rules
+    agent_config_file: testing/contextual_integrity_gpt4o_mini_recall_only_deterministic.yaml
+    memory_system_config_file: milamem_retention_rules.yaml
+    benchmark_config_file: retention_policy.yaml

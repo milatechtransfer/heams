@@ -38,7 +38,10 @@ class ComponentMetricsSummary(BaseModel):
         ge=0.0,
         le=1.0,
         exclude_if=lambda value: value is None,
-        description="Successful retain operations divided by total retain operations.",
+        description=(
+            "Successful retain operations divided by retain operations a policy "
+            "did not drop."
+        ),
     )
     delete_success_rate: float | None = Field(
         default=None,

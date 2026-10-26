@@ -507,6 +507,36 @@ class TestEnhanceComponentMetrics:
         assert enhanced[0].avg_retain_content_bytes == 1536.0  # (2048 + 1024) / 2
         assert enhanced[0].total_retained_content_bytes == 3072
 
+    def test_retains_dropped_by_a_policy_do_not_count_as_failures(self):
+        """A governed system declining content is not a failed retain."""
+        base_metrics = [
+            ComponentMetricsSummary(
+                component="privacy_retention",
+                total_operations=3,
+                successful_operations=1,
+                failed_operations=0,
+                operation_counts={"retain": 3},
+                status_counts={"success": 1, "dropped": 1, "error": 1},
+            )
+        ]
+        ledger = [
+            MemoryOperationEvent(
+                operation_type=MemoryOperationType.RETAIN,
+                status=status,
+                source=MemoryOperationSource.RUNTIME,
+                component="privacy_retention",
+            )
+            for status in (
+                MemoryOperationStatus.SUCCESS,
+                MemoryOperationStatus.DROPPED,
+                MemoryOperationStatus.ERROR,
+            )
+        ]
+
+        enhanced = enhance_component_metrics(base_metrics, ledger)
+
+        assert enhanced[0].retain_success_rate == 0.5
+
     def test_dynamic_memory_efficiency_metrics(self):
         """Retain/delete/consolidate dynamic metrics should derive from existing ledger and run data."""
         base_metrics = [

@@ -3,7 +3,7 @@ import importlib
 from typing import Any, Literal
 
 import pytest
-from pydantic import Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from heams.memory_systems.api import (
     BaseMemoryConfig as PublicBaseMemoryConfig,
@@ -21,6 +21,7 @@ from heams.memory_systems.plugins import (
     MemoryPlugin,
     MemoryPluginCatalog,
     MemoryRuntimeContext,
+    MemoryWrapperPlugin,
     discover_memory_plugins,
     memory_display_names,
     set_memory_plugin_catalog,
@@ -105,6 +106,7 @@ def test_entry_point_memory_plugin_is_loaded(monkeypatch: pytest.MonkeyPatch) ->
     class EntryPoint:
         name = "test_plugin"
         value = "test-package:plugin"
+        group = "heams.memory_systems"
 
         def load(self) -> MemoryPlugin:
             return plugin
@@ -242,3 +244,168 @@ def test_display_names_skip_plugins_that_fail_to_load(
 
     assert names["named.plugin"] == "Named plugin"
     assert names["in_context"] == "In-context"
+
+
+# ---- memory wrapper plugins ---------------------------------------------------------
+
+
+class WrapperTestConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    label: str = "wrapped"
+
+
+class WrapperTestMemory(BaseMemorySystem):
+    def __init__(self, inner: BaseMemorySystem, label: str) -> None:
+        super().__init__(inner.config, storage_dir=inner.storage_dir)
+        self.inner = inner
+        self.label = label
+
+    def _retain_impl(self, content, metadata) -> MemoryOperationResult:
+        return MemoryOperationResult(value="ok")
+
+    def _recall_impl(self, query, top_k) -> MemoryOperationResult:
+        return MemoryOperationResult(value=[])
+
+
+def _test_wrapper(provider: str = "test") -> MemoryWrapperPlugin:
+    return MemoryWrapperPlugin(
+        config_key="test_wrapper",
+        config_model=WrapperTestConfig,
+        wrap=lambda memory, config: WrapperTestMemory(memory, config.label),
+        provider=provider,
+    )
+
+
+@pytest.fixture()
+def wrapper_catalog():
+    set_memory_plugin_catalog(MemoryPluginCatalog([_test_plugin()], [_test_wrapper()]))
+    yield
+    set_memory_plugin_catalog(None)
+
+
+_VARIANT = {
+    "id": "wrapped",
+    "backend_config": {"type": "test.plugin", "marker": "loaded"},
+    "test_wrapper": {"label": "outer"},
+}
+
+
+def test_entry_point_memory_wrapper_is_loaded(monkeypatch: pytest.MonkeyPatch) -> None:
+    wrapper = _test_wrapper()
+
+    class EntryPoint:
+        name = "test_wrapper"
+        value = "test-package:wrapper"
+        group = "heams.memory_wrappers"
+
+        def load(self) -> MemoryWrapperPlugin:
+            return wrapper
+
+    monkeypatch.setattr(
+        "heams.memory_systems.plugins.metadata.entry_points",
+        lambda: [EntryPoint()],
+    )
+
+    catalog = discover_memory_plugins()
+
+    assert catalog.wrapper("test_wrapper").provider == "test-package:wrapper"
+    assert catalog.require("in_context")
+
+
+def test_duplicate_wrapper_keys_are_rejected() -> None:
+    catalog = MemoryPluginCatalog(wrappers=[_test_wrapper(provider="first")])
+
+    with pytest.raises(ValueError, match="Duplicate memory wrapper key"):
+        catalog.register_wrapper(_test_wrapper(provider="second"))
+
+
+@pytest.mark.usefixtures("wrapper_catalog")
+def test_variant_validates_a_claimed_wrapper_block() -> None:
+    variant = MemorySystemVariant.model_validate(_VARIANT)
+
+    assert variant.wrapper_configs == {"test_wrapper": WrapperTestConfig(label="outer")}
+
+
+@pytest.mark.usefixtures("wrapper_catalog")
+def test_variant_rejects_an_invalid_wrapper_block() -> None:
+    with pytest.raises(ValueError, match="unexpected"):
+        MemorySystemVariant.model_validate(
+            {**_VARIANT, "test_wrapper": {"label": "x", "unexpected": 1}}
+        )
+
+
+@pytest.mark.usefixtures("wrapper_catalog")
+def test_variant_rejects_a_key_no_wrapper_claims() -> None:
+    with pytest.raises(ValueError, match="no installed memory wrapper plugin"):
+        MemorySystemVariant.model_validate({**_VARIANT, "other_wrapper": {}})
+
+
+@pytest.mark.usefixtures("wrapper_catalog")
+def test_wrapper_blocks_survive_variant_serialization() -> None:
+    variant = MemorySystemVariant.model_validate(_VARIANT)
+
+    dumped = variant.model_dump(mode="json")
+
+    assert dumped["test_wrapper"] == {"label": "outer"}
+    assert "wrapper_configs" not in dumped
+    assert MemorySystemVariant.model_validate(dumped) == variant
+
+
+@pytest.mark.usefixtures("wrapper_catalog")
+def test_create_memory_applies_declared_wrappers(tmp_path) -> None:
+    variant = MemorySystemVariant.model_validate(_VARIANT)
+
+    memory = create_memory(
+        variant.backend_config,
+        storage_dir=tmp_path,
+        wrapper_configs=variant.wrapper_configs,
+    )
+
+    assert isinstance(memory, WrapperTestMemory)
+    assert memory.label == "outer"
+    assert isinstance(memory.inner, PluginTestMemory)
+
+
+@pytest.mark.usefixtures("wrapper_catalog")
+def test_a_variant_without_wrapper_blocks_is_unwrapped(tmp_path) -> None:
+    variant = MemorySystemVariant.model_validate(
+        {"backend_config": {"type": "test.plugin", "marker": "loaded"}}
+    )
+
+    memory = create_memory(
+        variant.backend_config,
+        storage_dir=tmp_path,
+        wrapper_configs=variant.wrapper_configs,
+    )
+
+    assert variant.wrapper_configs == {}
+    assert isinstance(memory, PluginTestMemory)
+
+
+def test_wrapper_keys_reserved_for_the_variant_are_rejected() -> None:
+    catalog = MemoryPluginCatalog()
+    for key in ("id", "backend_config", "wrapper_configs"):
+        with pytest.raises(ValueError, match="reserved"):
+            catalog.register_wrapper(
+                MemoryWrapperPlugin(
+                    config_key=key,
+                    config_model=WrapperTestConfig,
+                    wrap=lambda memory, config: memory,
+                )
+            )
+
+
+@pytest.mark.usefixtures("wrapper_catalog")
+def test_create_memory_skips_a_wrapper_whose_config_is_none(tmp_path) -> None:
+    variant = MemorySystemVariant.model_validate(
+        {"backend_config": {"type": "test.plugin", "marker": "loaded"}}
+    )
+
+    memory = create_memory(
+        variant.backend_config,
+        storage_dir=tmp_path,
+        wrapper_configs={"test_wrapper": None},
+    )
+
+    assert isinstance(memory, PluginTestMemory)

@@ -59,12 +59,16 @@ letta = [
 milamem = [
     "heams-memory-milamem",
 ]
+privacy-wrapper = [
+    "heams-memory-privacy-wrapper",
+]
 all-memory-plugins = [
     "heams-memory-mem0",
     "heams-memory-example",
     "heams-memory-hipporag",
     "heams-memory-letta",
     "heams-memory-milamem",
+    "heams-memory-privacy-wrapper",
 ]
 
 [dependency-groups]
@@ -119,6 +123,7 @@ heams-memory-mem0 = { path = "../memory_plugins/heams_memory_mem0", editable = t
 heams-memory-hipporag = { path = "../memory_plugins/heams_memory_hipporag", editable = true }
 heams-memory-letta = { path = "../memory_plugins/heams_memory_letta", editable = true }
 heams-memory-milamem = { path = "../memory_plugins/heams_memory_milamem", editable = true }
+heams-memory-privacy-wrapper = { path = "../memory_plugins/heams_memory_privacy_wrapper", editable = true }
 
 [tool.pytest.ini_options]
 env_files = [

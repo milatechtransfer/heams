@@ -36,8 +36,10 @@ Plugins that need their own consolidation knobs subclass
 `BaseConsolidationConfig` (from `heams.memory_systems.api`) and override the
 `consolidation` field; the benchmark only reads `consolidation.enabled`.
 
-`MemorySystemVariant` wraps one `backend_config` and may add a stable `id` plus
-an optional `privacy_config` retention wrapper.
+`MemorySystemVariant` wraps one `backend_config` and may add a stable `id`,
+plus one top-level block per installed memory wrapper plugin, under the key
+that plugin claims. The bundled privacy wrapper claims `privacy_config` (see
+[Privacy wrapper](#privacy-wrapper)).
 
 !!! note "Runtime manages persistence paths"
 
@@ -54,10 +56,31 @@ an optional `privacy_config` retention wrapper.
   implementation details of normal config-driven runs, not user-authored
   runtime placement settings.
 
-Privacy-wrapped presets should be authored as full `MemorySystemVariant` YAML
-objects with both `backend_config` and `privacy_config`. A deterministic
-privacy wrapper only changes behavior when at least one rule is present;
-otherwise it resolves to a no-op policy.
+### Privacy wrapper
+
+The privacy wrapper (`memory_plugins/heams_memory_privacy_wrapper/`,
+distribution `heams-memory-privacy-wrapper`) is a memory wrapper plugin: it
+adds retention and recall policies around whichever memory system
+`backend_config` names, so any memory system can be governed without changes
+to its own plugin. It is part of the `all-memory-plugins` extra that
+`make setup` installs. A config enables it with a top-level `privacy_config`
+block next to `backend_config`:
+
+```yaml
+id: milamem_retention_rules
+backend_config:
+  type: milamem
+  ...
+privacy_config:
+  retention: {...}
+  recall: {...}
+  rules: [...]
+```
+
+Set an `id` on wrapped configs: reports label runs by `id`, falling back to
+the memory type, so without one a wrapped and an unwrapped MilaMem run would
+both show as `milamem`. A deterministic privacy wrapper only changes behavior
+when at least one rule is present; otherwise it resolves to a no-op policy.
 
 `privacy_config.rules` is the PII ruleset: a single, shared list of
 `DeterministicRetentionRule` entries that every privacy layer reads
@@ -132,9 +155,9 @@ layers, so retention and recall can carry different ones.
 
 ### Runtime retention policies
 
-A scenario can change which user policy the retention layer enforces,
-instead of fixing it in YAML, by dispatching the orchestrator-only
-`set_retention_policy` memory command (never exposed as an agent tool):
+A scenario can set which user policy a memory system enforces, instead of
+fixing it in YAML, by dispatching the orchestrator-only `set_retention_policy`
+memory command (never exposed as an agent tool):
 
 ```yaml
 - action_type: memory_manipulation
@@ -143,8 +166,15 @@ instead of fixing it in YAML, by dispatching the orchestrator-only
     policies: ["Do not retain the user's pet information."]
 ```
 
-`PrivacyMemoryWrapper.set_retention_policy(policies)` replaces
-`retention.policies` with the given statements. Each call starts again from
+`set_retention_policy` is part of the `BaseMemorySystem` contract, so any
+memory system can implement it natively. A system that doesn't enforces no
+policy: the default logs a `skipped` `set_retention_policy` event, keeps
+storing everything, and benchmarks report it as ungoverned. A governed system
+that declines to store content logs that `retain` with the `dropped` status,
+which is how benchmarks tell a blocked fact from a stored one.
+
+The privacy wrapper implements it this way: `set_retention_policy(policies)`
+replaces `retention.policies` with the given statements. Each call starts again from
 the configured `privacy_config`, so a second call replaces the first rather
 than adding to it. `llm` mode reads the statements directly. `deterministic`
 and `hybrid` modes can't read free text, so each statement must also have an
@@ -165,13 +195,14 @@ privacy_config:
 
 If the config has a `policy_rules` table, a statement missing from it raises
 rather than going silently unenforced. A config with no table at all compiles
-no policies and enforces only its baseline `rules`; the retention-policy
-benchmark uses this as its ungoverned baseline. Because the appended rules
-join the shared ruleset, an active recall layer applies them too. Backends not
-wrapped by a `privacy_config` raise `NotImplementedError`.
+no policies and enforces only its baseline `rules`. Because the appended rules
+join the shared ruleset, an active recall layer applies them too.
 
 The retention-policy benchmark uses this to run all of its policies against
-one memory-system config.
+one memory-system config. Before a run, it asks the memory-system configs,
+through the `check_retention_policies` hook, to reject a governed setup that
+would make scores ambiguous. The privacy wrapper rejects an active recall
+policy and a `policy_rules` table missing one of the benchmark's policies.
 
 ## External memory plugins
 

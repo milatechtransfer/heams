@@ -88,10 +88,12 @@ against one memory-system config.
 
 A keyword layer can't read a statement, so a deterministic memory config
 carries `retention.policy_rules`, mapping every statement in `policies.json` to
-its keyword list from `rules.json`. The block is backend-agnostic, since
-`PrivacyMemoryWrapper` wraps any memory system, built-in or plugin. To evaluate
-a backend, give it a memory config with that `privacy_config` block, and point a
-run config's `memory_system_config_file` at it.
+its keyword list from `rules.json`; `configs/memory_systems/milamem_retention_rules.yaml`
+does this for all twelve policies. The `privacy_config` block is backend-agnostic,
+since the privacy wrapper plugin wraps any memory system, built-in or plugin. To
+evaluate a backend, give it a memory config with that `privacy_config` block, and
+point a run config's `memory_system_config_file` at it. Without the block, the
+backend runs ungoverned.
 
 ## Read the two rates, not accuracy
 

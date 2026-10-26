@@ -548,6 +548,10 @@ def _span_status(span: Any) -> tuple[TraceStatus, str | None]:
 def _memory_status(event: MemoryOperationEvent) -> TraceStatus:
     if event.status.value == "success":
         return "ok"
+    if event.status.value == "dropped":
+        # The operation was declined, not performed; the memory ledger keeps the
+        # exact `dropped` status.
+        return "skipped"
     return event.status.value  # type: ignore[return-value]
 
 

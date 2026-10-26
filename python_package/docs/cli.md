@@ -86,8 +86,8 @@ relative YAML paths under the matching subdirectory; nested paths such as
 `campaigns/mem0.yaml` are supported.
 
 The default `smoke_test_benchmark.yaml` contains one in-context experiment per
-smoke-scale benchmark, except Retention policy, which needs a memory config
-with a `privacy_config` (see [Retention policy](benchmarks/retention_policy.md)).
+smoke-scale benchmark, except Retention policy, which has its own run configs
+(see [Retention policy](benchmarks/retention_policy.md)).
 The complementary
 `smoke_test_memory_system.yaml` contains six one-scenario LoCoMo experiments:
 no-memory, in-context, MilaMem, Mem0, HippoRAG, and the example in-memory system. A representative benchmark smoke entry is:

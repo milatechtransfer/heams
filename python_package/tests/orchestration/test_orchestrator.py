@@ -25,12 +25,9 @@ from heams.evaluation.factory import (
 from heams.evaluation.schemas import AuditRecord, BaseGroundTruth
 from heams.memory_systems import (
     MemorySystemVariant,
-    PrivacyConfig,
-    PrivacyMemoryWrapper,
     create_memory,
 )
 from heams_memory_example.plugin import ExampleMemoryConfig
-from heams.memory_systems.api import BaseConsolidationConfig
 from heams.memory_systems.in_context import InContextConfig
 from heams.memory_systems.shared_types import MemoryEntry
 from heams.orchestration.orchestrator import Orchestrator
@@ -49,6 +46,7 @@ from heams.scenarios.base import (
 )
 from heams.scenarios.config import ScenarioExecutionConfig as BenchmarkConfig
 from tests.benchmarks.locomo.fixtures import load_locomo_judge_config
+from tests.benchmarks.retention_policy.fixtures import KeywordGovernedMemory
 
 
 def _agent_config() -> AgentParameters:
@@ -166,56 +164,6 @@ def test_post_session_consolidation_skips_disabled_and_unsupported_backends(
     ).run()
 
     memory.consolidate.assert_not_called()
-
-
-def test_post_session_consolidation_uses_privacy_wrapper_and_reaches_final_ledger(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    calls: list[str] = []
-    original_consolidate = PrivacyMemoryWrapper.consolidate
-
-    def _track_consolidate(self, *args, **kwargs) -> str:
-        calls.append("consolidate")
-        return original_consolidate(self, *args, **kwargs)
-
-    monkeypatch.setattr(PrivacyMemoryWrapper, "consolidate", _track_consolidate)
-    monkeypatch.setattr(
-        "heams.orchestration.orchestrator.create_agent",
-        lambda *args, **kwargs: MagicMock(),
-    )
-    monkeypatch.setattr(
-        "heams.orchestration.orchestrator.create_evaluator",
-        lambda *args, **kwargs: MagicMock(),
-    )
-
-    def _execute(**kwargs):
-        calls.append("execute")
-        return _successful_audit(), [], []
-
-    monkeypatch.setattr("heams.orchestration.orchestrator.execute_scenario", _execute)
-    memory_variant = MemorySystemVariant(
-        backend_config=ExampleMemoryConfig(
-            consolidation=BaseConsolidationConfig(enabled=True),
-        ),
-        privacy_config=PrivacyConfig(),
-    )
-
-    run = Orchestrator(
-        BenchmarkConfig(
-            scenarios=[_post_session_scenario(memory_variant)],
-            workspace_dir=tmp_path / "ws",
-        )
-    ).run()["POST-SESSION-CONSOLIDATION"][0]
-
-    assert calls == ["consolidate", "execute", "consolidate"]
-    assert run.memory_ledger is not None
-    consolidation_events = [
-        event
-        for event in run.memory_ledger
-        if event.operation_type.value == "consolidate"
-    ]
-    assert len(consolidation_events) == 2
-    assert consolidation_events[-1].duration_ms is not None
 
 
 def test_post_session_consolidation_failure_preserves_audit_and_tears_down(
@@ -1712,46 +1660,23 @@ def test_reset_state_dispatch_does_not_create_an_agent_turn() -> None:
     assert progress == [(0, True), (2, True)]
 
 
-def test_set_retention_policy_dispatches_to_the_agents_memory_system(
+def test_memory_manipulation_responses_have_no_status_without_a_ledger(
     tmp_path,
 ) -> None:
-    statement = "Do not retain the user's pet information."
-    memory = create_memory(
-        InContextConfig(),
-        storage_dir=tmp_path,
-        privacy_config=PrivacyConfig(
-            retention={
-                "mode": "deterministic",
-                "policy_rules": {
-                    statement: [{"rule_id": "drop-pet", "content_substrings": ["dog"]}]
-                },
-            },
-            recall={"enabled": False},
-        ),
-    )
     agent = _RecordingAgent()
-    agent.memory_system = memory
+    agent.memory_system = create_memory(InContextConfig(), storage_dir=tmp_path)
     scenario = Scenario(
-        id="SET-POLICY",
-        name="set policy",
+        id="NO-LEDGER",
+        name="no ledger",
         execution_sequence=[
-            MemoryManipulation(
-                command="set_retention_policy",
-                parameters={"policies": [statement]},
-            ),
-            MemoryManipulation(
-                command="retain", parameters={"content": "My dog is Rex."}
-            ),
+            MemoryManipulation(command="retain", parameters={"content": "fact"})
         ],
     )
 
-    _, _, responses = _execute_with_recorders(scenario, agent, _RecordingEvaluator())
+    _, _, [response] = _execute_with_recorders(scenario, agent, _RecordingEvaluator())
 
-    assert memory.privacy_config.retention.policies == [statement]
-    assert [response.answer for response in responses] == [
-        f"Retention policies set: {[statement]}",
-        "Memory dropped by privacy retention policy.",
-    ]
+    assert response.memory_status is None
+    assert "memory_status" not in response.model_dump()
 
 
 def test_unknown_agent_manipulation_names_command_and_scenario() -> None:
@@ -2108,3 +2033,76 @@ def test_tool_use_memory_usage_emits_run_ledger(
     ]
     assert run.component_metrics is not None
     assert run.component_metrics[0].operation_counts == {"recall": 1, "retain": 1}
+
+
+def test_set_retention_policy_dispatches_to_the_agents_memory_system(
+    tmp_path,
+) -> None:
+    statement = "Do not retain the user's pet information."
+    memory = KeywordGovernedMemory(storage_dir=tmp_path, drop_substrings=["dog"])
+    agent = _RecordingAgent()
+    agent.memory_system = memory
+    scenario = Scenario(
+        id="SET-POLICY",
+        name="set policy",
+        execution_sequence=[
+            MemoryManipulation(
+                command="set_retention_policy",
+                parameters={"policies": [statement]},
+            ),
+            MemoryManipulation(
+                command="retain", parameters={"content": "My dog is Rex."}
+            ),
+        ],
+    )
+
+    _, _, responses = _execute_with_recorders(scenario, agent, _RecordingEvaluator())
+
+    assert [response.answer for response in responses] == [
+        f"Enforcing {[statement]}",
+        "Not stored: the policy forbids it.",
+    ]
+
+
+def test_memory_manipulation_responses_carry_the_operation_status(tmp_path) -> None:
+    memory = KeywordGovernedMemory(storage_dir=tmp_path, drop_substrings=["dog"])
+    ledger: list = []
+    memory.attach_event_sink(ledger)
+    agent = _RecordingAgent()
+    agent.memory_system = memory
+    scenario = Scenario(
+        id="STATUS",
+        name="status",
+        execution_sequence=[
+            MemoryManipulation(
+                command="set_retention_policy",
+                parameters={"policies": ["Do not retain the user's pet information."]},
+            ),
+            MemoryManipulation(
+                command="retain", parameters={"content": "My dog is Rex."}
+            ),
+            MemoryManipulation(
+                command="retain", parameters={"content": "I live in Montreal."}
+            ),
+            MemoryManipulation(command="recall", parameters={"query": "Montreal"}),
+        ],
+    )
+
+    _, _, responses = execute_scenario(
+        scenario=scenario,
+        agent=agent,
+        environment=None,
+        evaluator=_RecordingEvaluator(),
+        eval_cfg=None,
+        build_ground_truth=lambda scenario, eval_cfg: BaseGroundTruth(
+            task_description=scenario.name
+        ),
+        memory_ledger=ledger,
+    )
+
+    assert [response.memory_status for response in responses] == [
+        "success",
+        "dropped",
+        "success",
+        "success",
+    ]

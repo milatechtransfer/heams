@@ -9,12 +9,15 @@ class MemoryOperationType(str, Enum):
     RECALL = "recall"
     DELETE = "delete"
     CONSOLIDATE = "consolidate"
+    SET_RETENTION_POLICY = "set_retention_policy"
 
 
 class MemoryOperationStatus(str, Enum):
     SUCCESS = "success"
     ERROR = "error"
     SKIPPED = "skipped"
+    #: A governed memory system declined to store the content under its policy.
+    DROPPED = "dropped"
 
 
 class MemoryOperationSource(str, Enum):

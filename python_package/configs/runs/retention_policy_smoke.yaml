@@ -1,0 +1,8 @@
+# RP-01 only: the sample sets "Do not retain the user's health information." on the
+# memory system, so health facts should be dropped and everything else stored.
+run_name: retention_policy_smoke
+experiments:
+  - name: milamem_retention_rp01_smoke
+    agent_config_file: testing/contextual_integrity_gpt4o_mini_recall_only_deterministic.yaml
+    memory_system_config_file: milamem_retention_rules.yaml
+    benchmark_config_file: retention_policy_smoke.yaml

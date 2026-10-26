@@ -108,7 +108,7 @@ def judge_recall_content(
     """
     import any_llm
 
-    from heams.utils.event_loop import ensure_thread_event_loop
+    from ._event_loop import ensure_thread_event_loop
 
     if matched_category is not None:
         user_content = (

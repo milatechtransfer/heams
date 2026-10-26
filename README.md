@@ -60,6 +60,9 @@ Documentation: <https://milatechtransfer.github.io/heams/>
 | `letta` | Plugin | Wraps a [Letta](https://github.com/letta-ai/letta) (MemGPT) agent; needs Postgres, see its [README](memory_plugins/heams_memory_letta/README.md) |
 | `example.in_memory` | Plugin | Minimal example to copy when writing your own |
 
+The privacy wrapper plugin adds retention and recall policies around any of
+these; see its [README](memory_plugins/heams_memory_privacy_wrapper/README.md).
+
 `make setup` installs all the plugins. Run `uv run heams memory list` (from
 `python_package/`) to see what is installed, and see
 [Memory backends](python_package/docs/memory-backends.md) for configuration.

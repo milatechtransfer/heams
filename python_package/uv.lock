@@ -2160,6 +2160,7 @@ all-memory-plugins = [
     { name = "heams-memory-letta" },
     { name = "heams-memory-mem0" },
     { name = "heams-memory-milamem" },
+    { name = "heams-memory-privacy-wrapper" },
 ]
 example-plugin = [
     { name = "heams-memory-example" },
@@ -2175,6 +2176,9 @@ mem0 = [
 ]
 milamem = [
     { name = "heams-memory-milamem" },
+]
+privacy-wrapper = [
+    { name = "heams-memory-privacy-wrapper" },
 ]
 
 [package.dev-dependencies]
@@ -2201,6 +2205,8 @@ requires-dist = [
     { name = "heams-memory-mem0", marker = "extra == 'mem0'", editable = "../memory_plugins/heams_memory_mem0" },
     { name = "heams-memory-milamem", marker = "extra == 'all-memory-plugins'", editable = "../memory_plugins/heams_memory_milamem" },
     { name = "heams-memory-milamem", marker = "extra == 'milamem'", editable = "../memory_plugins/heams_memory_milamem" },
+    { name = "heams-memory-privacy-wrapper", marker = "extra == 'all-memory-plugins'", editable = "../memory_plugins/heams_memory_privacy_wrapper" },
+    { name = "heams-memory-privacy-wrapper", marker = "extra == 'privacy-wrapper'", editable = "../memory_plugins/heams_memory_privacy_wrapper" },
     { name = "mcp", specifier = ">=1.5.0,<2" },
     { name = "mozilla-ai-tinyagent", specifier = ">=0.1.1" },
     { name = "pandas", specifier = ">=3.0.0" },
@@ -2208,7 +2214,7 @@ requires-dist = [
     { name = "pydantic-settings", specifier = ">=2.12.0" },
     { name = "pyyaml", specifier = ">=6.0.3" },
 ]
-provides-extras = ["mem0", "example-plugin", "hipporag", "letta", "milamem", "all-memory-plugins"]
+provides-extras = ["mem0", "example-plugin", "hipporag", "letta", "milamem", "privacy-wrapper", "all-memory-plugins"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -2332,6 +2338,30 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "pytest", specifier = ">=9.0.1" },
+    { name = "pytest-dotenv", specifier = ">=0.5.2" },
+]
+
+[[package]]
+name = "heams-memory-privacy-wrapper"
+version = "1.0.0"
+source = { editable = "../memory_plugins/heams_memory_privacy_wrapper" }
+dependencies = [
+    { name = "any-llm-sdk" },
+    { name = "heams" },
+    { name = "pydantic" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "any-llm-sdk", specifier = ">=1.25.0" },
+    { name = "heams", editable = "." },
+    { name = "pydantic", specifier = ">=2.12.5" },
+]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "heams-memory-example", editable = "../memory_plugins/heams_memory_example" },
     { name = "pytest", specifier = ">=9.0.1" },
     { name = "pytest-dotenv", specifier = ">=0.5.2" },
 ]
