@@ -1,6 +1,7 @@
 # Dependabot security updates are enabled in the repository settings.
-# This file groups the python_package ones into a single PR instead of one
-# PR per package, since every bump edits the same uv.lock and they conflict.
+# This file groups them into a single PR per lockfile instead of one PR per
+# package, since every bump edits the same uv.lock and they conflict. Each
+# lockfile has its own entry so its PR can be tested on its own.
 #
 # open-pull-requests-limit: 0 turns off routine version updates, so PRs are
 # only opened for security advisories.
@@ -8,6 +9,39 @@ version: 2
 updates:
   - package-ecosystem: "uv"
     directory: "/python_package"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    groups:
+      security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  - package-ecosystem: "uv"
+    directory: "/memory_plugins/heams_memory_letta"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    groups:
+      security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  - package-ecosystem: "uv"
+    directory: "/memory_plugins/heams_memory_mem0"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    groups:
+      security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+
+  - package-ecosystem: "uv"
+    directory: "/memory_plugins/heams_memory_milamem"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 0
