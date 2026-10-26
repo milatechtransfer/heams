@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from heams.memory_systems import (
+from heams_memory_privacy_wrapper import (
     MEMORY_RETENTION_ACTION_KEY,
     MEMORY_RETENTION_DECISION_SOURCE_KEY,
     MEMORY_RETENTION_POLICY_ID_KEY,
@@ -28,10 +28,10 @@ from heams.memory_systems import (
     build_recall_policy,
     build_retention_policy,
 )
-from heams.memory_systems.privacy.recall_policy_hybrid import (
+from heams_memory_privacy_wrapper.recall_policy_hybrid import (
     build_judge_system_prompt as build_recall_judge_system_prompt,
 )
-from heams.memory_systems.privacy.retention_policy_hybrid import (
+from heams_memory_privacy_wrapper.retention_policy_hybrid import (
     build_judge_system_prompt,
 )
 from heams.memory_systems.shared_types import MemoryEntry
@@ -300,7 +300,7 @@ def test_hybrid_retention_evaluator_drops_when_llm_verifies_rule_match(
         return RetentionVerdict(action="drop", reasoning="confirmed sensitive")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.retention_policy_hybrid.judge_retention_content",
+        "heams_memory_privacy_wrapper.retention_policy_hybrid.judge_retention_content",
         _fake_judge,
     )
     evaluator = HybridRetentionEvaluator(
@@ -340,7 +340,7 @@ def test_hybrid_retention_evaluator_stores_when_llm_overturns_rule_match(
         )
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.retention_policy_hybrid.judge_retention_content",
+        "heams_memory_privacy_wrapper.retention_policy_hybrid.judge_retention_content",
         _fake_judge,
     )
     evaluator = HybridRetentionEvaluator(
@@ -375,7 +375,7 @@ def test_hybrid_retention_evaluator_fails_closed_to_rule_when_verifier_errors(
         raise RuntimeError("provider outage")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.retention_policy_hybrid.judge_retention_content",
+        "heams_memory_privacy_wrapper.retention_policy_hybrid.judge_retention_content",
         _raise,
     )
     evaluator = HybridRetentionEvaluator(
@@ -415,7 +415,7 @@ def test_hybrid_retention_evaluator_ambiguous_verdict_keeps_rule_match(
         return RetentionVerdict(action="ambiguous", reasoning="not sure either way")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.retention_policy_hybrid.judge_retention_content",
+        "heams_memory_privacy_wrapper.retention_policy_hybrid.judge_retention_content",
         _fake_judge,
     )
     evaluator = HybridRetentionEvaluator(
@@ -454,7 +454,7 @@ def test_hybrid_retention_evaluator_ambiguous_verdict_defaults_to_store(
         return RetentionVerdict(action="ambiguous", reasoning="unclear if sensitive")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.retention_policy_hybrid.judge_retention_content",
+        "heams_memory_privacy_wrapper.retention_policy_hybrid.judge_retention_content",
         _fake_judge,
     )
     evaluator = HybridRetentionEvaluator(
@@ -481,7 +481,7 @@ def test_hybrid_retention_evaluator_falls_back_to_llm_judge(
         return RetentionVerdict(action="drop", reasoning="looks like a medical record")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.retention_policy_hybrid.judge_retention_content",
+        "heams_memory_privacy_wrapper.retention_policy_hybrid.judge_retention_content",
         _fake_judge,
     )
     evaluator = HybridRetentionEvaluator(
@@ -531,7 +531,7 @@ def test_hybrid_retention_evaluator_builds_judge_prompt_from_rule_categories(
         return RetentionVerdict(action="store", reasoning="n/a")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.retention_policy_hybrid.judge_retention_content",
+        "heams_memory_privacy_wrapper.retention_policy_hybrid.judge_retention_content",
         _fake_judge,
     )
     evaluator = HybridRetentionEvaluator(
@@ -582,7 +582,7 @@ def test_hybrid_retention_evaluator_builds_judge_prompt_from_policies(
         return RetentionVerdict(action="store", reasoning="n/a")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.retention_policy_hybrid.judge_retention_content",
+        "heams_memory_privacy_wrapper.retention_policy_hybrid.judge_retention_content",
         _fake_judge,
     )
     evaluator = HybridRetentionEvaluator(
@@ -620,7 +620,7 @@ def test_hybrid_retention_evaluator_stores_when_llm_judge_says_store(
         return RetentionVerdict(action="store", reasoning="ordinary preference")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.retention_policy_hybrid.judge_retention_content",
+        "heams_memory_privacy_wrapper.retention_policy_hybrid.judge_retention_content",
         _fake_judge,
     )
     evaluator = HybridRetentionEvaluator(
@@ -642,7 +642,7 @@ def test_hybrid_retention_evaluator_fails_closed_when_llm_judge_errors(
         raise RuntimeError("provider outage")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.retention_policy_hybrid.judge_retention_content",
+        "heams_memory_privacy_wrapper.retention_policy_hybrid.judge_retention_content",
         _raise,
     )
     evaluator = HybridRetentionEvaluator(
@@ -674,7 +674,7 @@ def test_llm_retention_evaluator_never_evaluates_rule_matchers(
         return RetentionVerdict(action="store", reasoning="not sensitive")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.retention_policy_hybrid.judge_retention_content",
+        "heams_memory_privacy_wrapper.retention_policy_hybrid.judge_retention_content",
         _fake_judge,
     )
     evaluator = LLMRetentionEvaluator(
@@ -708,7 +708,7 @@ def test_llm_retention_evaluator_drops_when_judge_says_drop(
         return RetentionVerdict(action="drop", reasoning="medical record")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.retention_policy_hybrid.judge_retention_content",
+        "heams_memory_privacy_wrapper.retention_policy_hybrid.judge_retention_content",
         _fake_judge,
     )
     evaluator = LLMRetentionEvaluator(
@@ -738,7 +738,7 @@ def test_llm_retention_evaluator_ambiguous_verdict_defaults_to_store(
         return RetentionVerdict(action="ambiguous", reasoning="unclear if sensitive")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.retention_policy_hybrid.judge_retention_content",
+        "heams_memory_privacy_wrapper.retention_policy_hybrid.judge_retention_content",
         _fake_judge,
     )
     evaluator = LLMRetentionEvaluator(
@@ -760,7 +760,7 @@ def test_llm_retention_evaluator_fails_closed_when_judge_errors(
         raise RuntimeError("provider outage")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.retention_policy_hybrid.judge_retention_content",
+        "heams_memory_privacy_wrapper.retention_policy_hybrid.judge_retention_content",
         _raise,
     )
     evaluator = LLMRetentionEvaluator(
@@ -786,7 +786,7 @@ def test_llm_retention_evaluator_builds_judge_prompt_from_policies(
         return RetentionVerdict(action="store", reasoning="n/a")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.retention_policy_hybrid.judge_retention_content",
+        "heams_memory_privacy_wrapper.retention_policy_hybrid.judge_retention_content",
         _fake_judge,
     )
     evaluator = LLMRetentionEvaluator(
@@ -872,7 +872,7 @@ def test_hybrid_recall_evaluator_withholds_when_llm_verifies_rule_match(
         return RecallVerdict(action="withhold", reasoning="confirmed sensitive")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.recall_policy_hybrid.judge_recall_content",
+        "heams_memory_privacy_wrapper.recall_policy_hybrid.judge_recall_content",
         _fake_judge,
     )
     evaluator = HybridRecallEvaluator(
@@ -911,7 +911,7 @@ def test_hybrid_recall_evaluator_exposes_when_llm_overturns_rule_match(
         return RecallVerdict(action="expose", reasoning="not relevant here")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.recall_policy_hybrid.judge_recall_content",
+        "heams_memory_privacy_wrapper.recall_policy_hybrid.judge_recall_content",
         _fake_judge,
     )
     evaluator = HybridRecallEvaluator(
@@ -946,7 +946,7 @@ def test_hybrid_recall_evaluator_fails_closed_to_rule_when_verifier_errors(
         raise RuntimeError("provider outage")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.recall_policy_hybrid.judge_recall_content",
+        "heams_memory_privacy_wrapper.recall_policy_hybrid.judge_recall_content",
         _raise,
     )
     evaluator = HybridRecallEvaluator(
@@ -985,7 +985,7 @@ def test_hybrid_recall_evaluator_falls_back_to_llm_judge_with_query_context(
         return RecallVerdict(action="withhold", reasoning="reveals a medical detail")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.recall_policy_hybrid.judge_recall_content",
+        "heams_memory_privacy_wrapper.recall_policy_hybrid.judge_recall_content",
         _fake_judge,
     )
     evaluator = HybridRecallEvaluator(
@@ -1020,7 +1020,7 @@ def test_hybrid_recall_evaluator_exposes_when_llm_judge_says_expose(
         return RecallVerdict(action="expose", reasoning="ordinary preference")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.recall_policy_hybrid.judge_recall_content",
+        "heams_memory_privacy_wrapper.recall_policy_hybrid.judge_recall_content",
         _fake_judge,
     )
     evaluator = HybridRecallEvaluator(
@@ -1046,7 +1046,7 @@ def test_hybrid_recall_evaluator_caches_llm_verdict_by_content_and_query(
         return RecallVerdict(action="expose", reasoning="ok")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.recall_policy_hybrid.judge_recall_content",
+        "heams_memory_privacy_wrapper.recall_policy_hybrid.judge_recall_content",
         _fake_judge,
     )
     evaluator = HybridRecallEvaluator(
@@ -1081,7 +1081,7 @@ def test_hybrid_recall_evaluator_does_not_share_cache_across_matched_and_unmatch
         return RecallVerdict(action="withhold", reasoning="confirmed sensitive")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.recall_policy_hybrid.judge_recall_content",
+        "heams_memory_privacy_wrapper.recall_policy_hybrid.judge_recall_content",
         _fake_judge,
     )
     evaluator = HybridRecallEvaluator(
@@ -1122,7 +1122,7 @@ def test_hybrid_recall_evaluator_does_not_cache_llm_judge_errors(
         raise RuntimeError("provider outage")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.recall_policy_hybrid.judge_recall_content",
+        "heams_memory_privacy_wrapper.recall_policy_hybrid.judge_recall_content",
         _raise,
     )
     evaluator = HybridRecallEvaluator(
@@ -1142,7 +1142,7 @@ def test_hybrid_recall_evaluator_fails_closed_when_llm_judge_errors(
         raise RuntimeError("provider outage")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.recall_policy_hybrid.judge_recall_content",
+        "heams_memory_privacy_wrapper.recall_policy_hybrid.judge_recall_content",
         _raise,
     )
     evaluator = HybridRecallEvaluator(
@@ -1176,7 +1176,7 @@ def test_hybrid_recall_evaluator_builds_judge_prompt_from_rule_categories(
         return RecallVerdict(action="expose", reasoning="n/a")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.recall_policy_hybrid.judge_recall_content",
+        "heams_memory_privacy_wrapper.recall_policy_hybrid.judge_recall_content",
         _fake_judge,
     )
     evaluator = HybridRecallEvaluator(
@@ -1232,7 +1232,7 @@ def test_hybrid_recall_evaluator_builds_judge_prompt_from_policies(
         return RecallVerdict(action="expose", reasoning="n/a")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.recall_policy_hybrid.judge_recall_content",
+        "heams_memory_privacy_wrapper.recall_policy_hybrid.judge_recall_content",
         _fake_judge,
     )
     evaluator = HybridRecallEvaluator(
@@ -1288,7 +1288,7 @@ def test_llm_recall_evaluator_never_evaluates_rule_matchers(
         return RecallVerdict(action="expose", reasoning="not sensitive")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.recall_policy_hybrid.judge_recall_content",
+        "heams_memory_privacy_wrapper.recall_policy_hybrid.judge_recall_content",
         _fake_judge,
     )
     evaluator = LLMRecallEvaluator(
@@ -1323,7 +1323,7 @@ def test_llm_recall_evaluator_withholds_when_judge_says_withhold(
         return RecallVerdict(action="withhold", reasoning="medical record")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.recall_policy_hybrid.judge_recall_content",
+        "heams_memory_privacy_wrapper.recall_policy_hybrid.judge_recall_content",
         _fake_judge,
     )
     evaluator = LLMRecallEvaluator(
@@ -1344,7 +1344,7 @@ def test_llm_recall_evaluator_fails_closed_when_judge_errors(
         raise RuntimeError("provider outage")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.recall_policy_hybrid.judge_recall_content",
+        "heams_memory_privacy_wrapper.recall_policy_hybrid.judge_recall_content",
         _raise,
     )
     evaluator = LLMRecallEvaluator(
@@ -1375,7 +1375,7 @@ def test_llm_recall_evaluator_caches_verdict_by_content_and_query(
         return RecallVerdict(action="expose", reasoning="ok")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.recall_policy_hybrid.judge_recall_content",
+        "heams_memory_privacy_wrapper.recall_policy_hybrid.judge_recall_content",
         _fake_judge,
     )
     evaluator = LLMRecallEvaluator(
@@ -1406,7 +1406,7 @@ def test_llm_recall_evaluator_builds_judge_prompt_from_policies(
         return RecallVerdict(action="expose", reasoning="n/a")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.recall_policy_hybrid.judge_recall_content",
+        "heams_memory_privacy_wrapper.recall_policy_hybrid.judge_recall_content",
         _fake_judge,
     )
     evaluator = LLMRecallEvaluator(

@@ -134,9 +134,22 @@ call, and turn an exception into an `error` event plus a failure message for
 the agent. If you need to wrap one, for example to hold a lock as the Letta
 plugin does, call `super()` so the timing and logging still happen.
 
-You also do not implement `set_retention_policy`, which the Retention policy
-benchmark uses. Set `privacy_config` in the memory-system YAML instead; the
-framework then wraps your system in a privacy layer that provides it.
+You don't have to implement `set_retention_policy`, which the Retention policy
+benchmark uses. Without it, your system runs that benchmark ungoverned: the
+default enforces no policy and says so in the results. There are two ways to
+give it governance:
+
+- **Wrap it with the privacy wrapper.** Add a `privacy_config` block next to
+  `backend_config` in the memory-system YAML; the privacy wrapper plugin then
+  applies retention and recall policies around your system, with no code
+  changes. See [Privacy wrapper](memory-backends.md#privacy-wrapper).
+- **Implement it natively.** Override `set_retention_policy(policies)` to enforce
+  the free-text policies your own way, for example by adding them to your
+  system's prompts. When `retain` declines to store something, log the `retain`
+  event with the `dropped` status, so benchmarks see the content was blocked.
+  To reject a configuration that can't enforce a benchmark's policies before
+  the run starts, override `check_retention_policies(policies)` on your config
+  class and raise `ValueError`.
 
 ### `MemoryOperationResult`
 

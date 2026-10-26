@@ -8,7 +8,6 @@ from heams.benchmarks.factory import create_benchmark
 from heams.benchmarks.retention_policy.config import RetentionPolicyBenchmarkConfig
 from heams.benchmarks.retention_policy.metrics import compute_metrics
 from heams.evaluation.factory import create_evaluator
-from heams.memory_systems.privacy import PrivacyConfig
 from heams.orchestration.scenario_execution import execute_scenario
 from tests.benchmarks.retention_policy.fixtures import (
     _AgentStub,
@@ -107,25 +106,28 @@ def test_limit_caps_policies_not_rows(tmp_path):
     assert {f.expected for f in facts} == {"store", "drop"}
 
 
+def test_an_ungoverned_memory_system_runs_and_is_marked_ungoverned(tmp_path):
+    """Without governance every fact is stored, and the notes say so."""
+    benchmark = create_benchmark(_load_config("retention_policy_smoke"))
+    sample = benchmark.samples[0]
+
+    audit = _run(sample, _memory(tmp_path, None))
+
+    assert audit.score_available is not False
+    assert {record.observed for record in audit.report_records} == {"store"}
+    assert "Policy not enforced" in audit.audit_notes
+
+
 def test_policy_with_no_rules_stores_everything(tmp_path):
     """A policy that forbids nothing stores and recalls everything: leak 100%, allowed 100%.
 
-    Expressed as an empty rule list rather than `privacy_config=None`. A null
-    config leaves the backend unwrapped, so there is no governance layer to ask;
-    an empty one still builds the wrapper and resolves to a no-op policy, which
-    is the ungoverned baseline this benchmark wants to measure.
+    The system is governed but drops nothing. An ungoverned system gives the same
+    scores, marked ungoverned (see
+    `test_an_ungoverned_memory_system_runs_and_is_marked_ungoverned`).
     """
     benchmark = create_benchmark(_load_config("retention_policy_smoke"))
     sample = benchmark.samples[0]
-    permissive = PrivacyConfig.model_validate(
-        {
-            "enabled": True,
-            "retention": {"enabled": True, "mode": "deterministic"},
-            "recall": {"enabled": False},
-            "rules": [],
-        }
-    )
-    audit = _run(sample, _memory(tmp_path, permissive))
+    audit = _run(sample, _memory(tmp_path, []))
 
     decisions = [
         {
@@ -143,21 +145,13 @@ def test_policy_with_no_rules_stores_everything(tmp_path):
 
 
 def test_deterministic_rule_drops_matching_chunk(tmp_path):
-    """A rule that matches drops the payload; the evaluator scores it correct."""
+    """A fact the system drops is scored correct when the policy prohibits it."""
     benchmark = create_benchmark(_load_config("retention_policy_smoke"))
     sample = benchmark.samples[0]
     target = next(f for f in sample.ground_truth.facts if f.expected == "drop")
     substring = target.text.split()[0]
 
-    privacy = PrivacyConfig.model_validate(
-        {
-            "enabled": True,
-            "retention": {"enabled": True, "mode": "deterministic"},
-            "recall": {"enabled": False},
-            "rules": [{"rule_id": "r1", "content_substrings": [substring]}],
-        }
-    )
-    audit = _run(sample, _memory(tmp_path, privacy))
+    audit = _run(sample, _memory(tmp_path, [substring]))
 
     record = next(r for r in audit.report_records if r.key == target.row_id)
     assert record.passed is True
@@ -228,23 +222,3 @@ def test_memory_manipulation_rejects_commands_outside_the_allowlist(tmp_path):
             eval_cfg=eval_cfg,
             build_ground_truth=lambda s, c: c.to_ground_truth(s),
         )
-
-
-def test_policy_missing_from_policy_rules_fails_the_scenario(tmp_path):
-    benchmark = create_benchmark(_load_config("retention_policy_smoke"))
-    privacy = PrivacyConfig.model_validate(
-        {
-            "retention": {
-                "mode": "deterministic",
-                "policy_rules": {
-                    "some other policy": [
-                        {"rule_id": "r1", "content_substrings": ["x"]}
-                    ]
-                },
-            },
-            "recall": {"enabled": False},
-        }
-    )
-
-    with pytest.raises(ValueError, match="no rules for"):
-        _run(benchmark.samples[0], _memory(tmp_path, privacy))

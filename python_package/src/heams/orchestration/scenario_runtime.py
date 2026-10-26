@@ -75,10 +75,10 @@ def needs_explicit_final_answer(agent_cfg: AgentConfig) -> bool:
 
 def resolve_memory_system_entry(
     mem_cfg: MemorySystemConfig | MemorySystemVariant,
-) -> tuple[MemorySystemConfig, object | None]:
+) -> tuple[MemorySystemConfig, dict[str, Any]]:
     if isinstance(mem_cfg, MemorySystemVariant):
-        return mem_cfg.backend_config, mem_cfg.privacy_config
-    return mem_cfg, None
+        return mem_cfg.backend_config, dict(mem_cfg.wrapper_configs)
+    return mem_cfg, {}
 
 
 def consolidate_if_enabled(memory: BaseMemorySystem) -> None:
@@ -101,7 +101,7 @@ def setup_scenario_runtime(
     create_evaluator_fn: Callable[..., Any] = create_evaluator,
     trace_collector: ExecutionTraceCollector | None = None,
 ) -> tuple[Any, BaseMemorySystem, Path, Any, Any, list[MemoryOperationEvent]]:
-    backend_cfg, privacy_config = resolve_memory_system_entry(mem_cfg)
+    backend_cfg, wrapper_configs = resolve_memory_system_entry(mem_cfg)
 
     env_priming_config = scenario.scenario_priming.environment.config
     environment = None
@@ -159,7 +159,7 @@ def setup_scenario_runtime(
                 "combo_key": combo_key,
                 "sample_index": sample_index,
             },
-            privacy_config=privacy_config,
+            wrapper_configs=wrapper_configs,
         )
         memory_entries = scenario.scenario_priming.memory.entries
         started_ns = time.time_ns()

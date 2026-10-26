@@ -1,9 +1,15 @@
 # Retention policy benchmark
 
-The Retention policy benchmark scores the **governance layer in front of
-memory**. Given a policy such as "Do not retain the user's health information.",
-a prohibited fact must be blocked at ingest and absent from recall, and a
-permitted fact must be stored and still recallable.
+The Retention policy benchmark scores a memory system's **governance**. Given a
+policy such as "Do not retain the user's health information.", a prohibited
+fact must be blocked at ingest and absent from recall, and a permitted fact
+must be stored and still recallable.
+
+Any memory system can run it. A governed one, either wrapped by the
+[privacy wrapper](../memory-backends.md#privacy-wrapper) or implementing
+`set_retention_policy` itself, enforces each sample's policy. An ungoverned one
+enforces nothing and stores everything; each sample's audit notes say the
+policy was not enforced, so its score isn't read as a governed one.
 
 The agent is never called (a run config still names an agent config, as every
 experiment does). Each sample is a sequence of memory operations:
@@ -76,40 +82,48 @@ every fact passed.
 
 ## Memory-system requirements
 
-These are checked when the experiment config is resolved, before any scenario
-runs:
+The benchmark talks to the memory system only through the `BaseMemorySystem`
+contract: `set_retention_policy`, `retain` and `recall`. A `retain` the system
+declines to store carries the `dropped` operation status, which is how the
+evaluator tells a blocked fact from a stored one.
 
-- The memory-system config needs an **active `privacy_config`**, because
-  `set_retention_policy` is handled by the privacy wrapper.
-- **`privacy_config.recall.enabled: false`**. With a recall policy active, a
-  fact that is not recalled could have been blocked at ingest or withheld at
-  recall, and the benchmark exists to tell those apart.
-- If the config has a `retention.policy_rules` table and runs in
-  `deterministic` or `hybrid` mode, the table needs an entry for every policy
-  statement the run will set.
+Before any scenario runs, the experiment config asks the memory-system configs,
+through the `check_retention_policies` hook, to reject a governed setup that
+would make scores ambiguous. A system without governance always passes. With
+the privacy wrapper, these are rejected:
 
-`set_retention_policy` passes the statement to the retention judge (`hybrid`
-and `llm` modes) and, in `deterministic` and `hybrid` modes, adds the keyword
-rules listed for it in `retention.policy_rules`. A `deterministic` config with
-no `policy_rules` table enforces no policy at all, which gives an ungoverned
-baseline.
+- **An active recall policy.** Set `privacy_config.recall.enabled: false`.
+  Otherwise a fact that is not recalled could have been blocked at ingest or
+  withheld at recall, and the benchmark exists to tell those apart.
+- **A missing policy.** If the config has a `retention.policy_rules` table and
+  runs in `deterministic` or `hybrid` mode, the table needs an entry for every
+  policy statement the run will set.
 
-The `privacy_config` block works with any backend: to test a backend, give its
+With the privacy wrapper, `set_retention_policy` passes the statement to the
+retention judge (`hybrid` and `llm` modes) and, in `deterministic` and `hybrid`
+modes, adds the keyword rules listed for it in `retention.policy_rules`. The
+`privacy_config` block works with any backend: to test a backend, give its
 memory config a `privacy_config` with a `policy_rules` entry for every policy
 statement. Setting `retention.mode` to `hybrid` adds an LLM judge for facts the
 rules don't match; `llm` uses the judge alone.
 
 ## Running
 
-No run config ships for this benchmark. Create one under `configs/runs/` that
-pairs a memory config carrying a `privacy_config` with
-`configs/benchmarks/retention_policy.yaml`, then:
+`configs/memory_systems/milamem_retention_rules.yaml` is a runnable reference
+config: MilaMem with deterministic keyword rules for all twelve policies (from
+`datasets/retention_policy/rules.json`) and recall off.
 
 ```bash
 cd python_package
-make run CONFIG=<your_run> OUTPUT_DIR=results/<your_run>
-uv run heams generate-report --results-dir results/<your_run> --max-examples 12
+# One policy (RP-01, health) end to end
+make run CONFIG=retention_policy_smoke OUTPUT_DIR=results/retention_policy_smoke
+# The full 12 x 12 matrix as one experiment
+make run CONFIG=retention_policy_matrix OUTPUT_DIR=results/retention_policy_matrix
+uv run heams generate-report --results-dir results/retention_policy_matrix --max-examples 12
 ```
+
+To test another memory system, copy the reference config and change
+`backend_config`; leave out `privacy_config` to measure it ungoverned.
 
 The benchmark config fields are `dataset_path`, `policy_ids` (run only the named
 policies; `null` runs all), `limit` (cap on policy samples, never cutting a
@@ -133,9 +147,10 @@ Outputs:
     results directory into one set of tables; it does not split by memory
     system. To compare backends, give each its own results directory.
 
-Keyword rules miss sentences that
-contain none of their keywords, and over-block when a keyword appears inside an
-unrelated word.
+With `milamem_retention_rules.yaml`, the full matrix gives a leak rate of 26.0%
+(25/96) and an allowed rate of 99.2% (1048/1056). Keyword rules miss sentences
+that contain none of their keywords, and over-block when a keyword appears
+inside an unrelated word.
 
 ## Source and license
 
@@ -148,8 +163,8 @@ See [Citations & credits](../citations.md).
 
 ## Related docs
 
-- [Memory backends](../memory-backends.md): memory-system configs and the
-  privacy wrapper
+- [Memory backends](../memory-backends.md): memory-system configs, runtime
+  retention policies, and the privacy wrapper
 - [Contextual Integrity](contextual_integrity.md): disclosure and leakage at
   answer time
 - [Adding a benchmark](../adding-benchmark.md)

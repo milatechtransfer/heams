@@ -27,10 +27,13 @@ def memory_label_from_variant_payload(payload: object) -> str:
     try:
         variant = MemorySystemVariant.model_validate(payload)
     except Exception:
+        # A plugin the config needs isn't installed here; read the label directly.
+        if payload.get("id"):
+            return str(payload["id"])
         backend = payload.get("backend_config")
         if isinstance(backend, dict) and backend.get("type"):
             return str(backend["type"])
-        return str(payload.get("id") or "memory")
+        return "memory"
     return variant.id or variant.backend_type
 
 

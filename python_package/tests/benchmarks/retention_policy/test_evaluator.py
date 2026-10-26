@@ -16,8 +16,6 @@ from heams.evaluation.scenarios.retention_policy import (
     RetentionPolicyFact,
     RetentionPolicyGroundTruth,
 )
-from heams.memory_systems.privacy import PrivacyConfig
-from heams.memory_systems.privacy.wrapper import RETENTION_DROPPED_MESSAGE
 from tests.benchmarks.retention_policy.fixtures import _load_config, _memory, _run
 
 
@@ -71,7 +69,7 @@ def test_permitted_fact_fails_when_dropped_at_ingest() -> None:
     audit = evaluator.audit(
         [
             _POLICY_SET,
-            AgentResponse(answer=RETENTION_DROPPED_MESSAGE),
+            AgentResponse(answer="Dropped.", memory_status="dropped"),
             AgentResponse(answer="[]"),
         ],
         _ground_truth(fact),
@@ -98,7 +96,7 @@ def test_permitted_fact_dropped_at_ingest_still_fails_even_if_stale_data_is_reca
     audit = evaluator.audit(
         [
             _POLICY_SET,
-            AgentResponse(answer=RETENTION_DROPPED_MESSAGE),
+            AgentResponse(answer="Dropped.", memory_status="dropped"),
             AgentResponse(answer="['likes hiking']"),
         ],
         _ground_truth(fact),
@@ -137,7 +135,7 @@ def test_prohibited_fact_passes_when_blocked_and_absent() -> None:
     audit = evaluator.audit(
         [
             _POLICY_SET,
-            AgentResponse(answer=RETENTION_DROPPED_MESSAGE),
+            AgentResponse(answer="Dropped.", memory_status="dropped"),
             AgentResponse(answer="[]"),
         ],
         _ground_truth(fact),
@@ -205,7 +203,7 @@ def test_audit_scores_multiple_facts_independently() -> None:
         [
             _POLICY_SET,
             AgentResponse(answer="Successfully saved to memory."),
-            AgentResponse(answer=RETENTION_DROPPED_MESSAGE),
+            AgentResponse(answer="Dropped.", memory_status="dropped"),
             AgentResponse(answer="['likes hiking']"),
             AgentResponse(answer="[]"),
         ],
@@ -311,7 +309,7 @@ def test_blocked_fact_never_calls_the_semantic_judge_even_with_unrelated_candida
     evaluator.audit(
         [
             _POLICY_SET,
-            AgentResponse(answer=RETENTION_DROPPED_MESSAGE),
+            AgentResponse(answer="Dropped.", memory_status="dropped"),
             AgentResponse(
                 answer="['completely unrelated other fact', 'another unrelated fact']"
             ),
@@ -406,15 +404,7 @@ def test_evaluator_marks_wrong_decision_incorrect(tmp_path):
     target = next(f for f in sample.ground_truth.facts if f.expected == "store")
     substring = target.text.split()[0]
 
-    privacy = PrivacyConfig.model_validate(
-        {
-            "enabled": True,
-            "retention": {"enabled": True, "mode": "deterministic"},
-            "recall": {"enabled": False},
-            "rules": [{"rule_id": "r1", "content_substrings": [substring]}],
-        }
-    )
-    audit = _run(sample, _memory(tmp_path, privacy))
+    audit = _run(sample, _memory(tmp_path, [substring]))
 
     record = next(r for r in audit.report_records if r.key == target.row_id)
     assert record.passed is False

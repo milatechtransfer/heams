@@ -184,6 +184,45 @@ def test_memory_event_content_prefers_display_keys(
     assert record.events[0].content == expected
 
 
+@pytest.mark.parametrize(
+    ("status", "operation_type", "expected"),
+    [
+        (MemoryOperationStatus.SUCCESS, MemoryOperationType.RETAIN, "ok"),
+        (MemoryOperationStatus.DROPPED, MemoryOperationType.RETAIN, "skipped"),
+        (
+            MemoryOperationStatus.SKIPPED,
+            MemoryOperationType.SET_RETENTION_POLICY,
+            "skipped",
+        ),
+        (MemoryOperationStatus.ERROR, MemoryOperationType.RECALL, "error"),
+    ],
+)
+def test_memory_event_status_maps_onto_trace_status(
+    status: MemoryOperationStatus,
+    operation_type: MemoryOperationType,
+    expected: str,
+) -> None:
+    collector = ExecutionTraceCollector(
+        run_id="run-1",
+        scenario_id="scenario-1",
+        agent_index=0,
+        memory_index=0,
+        evaluator_index=0,
+        sample_index=0,
+    )
+    collector.add_memory_event(
+        MemoryOperationEvent(
+            operation_type=operation_type,
+            status=status,
+            source=MemoryOperationSource.RUNTIME,
+            duration_ms=1.0,
+        )
+    )
+    record = collector.finalize(outcome="completed")
+    assert record.events[0].status == expected
+    assert record.events[0].name == operation_type.value
+
+
 def test_execution_trace_ledger_recovers_partial_tail_and_rejects_duplicates(
     tmp_path: Path,
 ) -> None:

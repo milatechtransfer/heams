@@ -1,3 +1,5 @@
+"""Privacy wrapper for HEAMS: retention and recall policies around any memory system."""
+
 from .config import (
     DeterministicRetentionRule,
     PrivacyConfig,

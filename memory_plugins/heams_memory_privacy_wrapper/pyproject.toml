@@ -1,0 +1,37 @@
+[project]
+name = "heams-memory-privacy-wrapper"
+version = "1.0.0"
+license = "MIT"
+description = "Privacy wrapper for HEAMS: retention and recall policies around any memory system."
+requires-python = ">=3.12.6"
+dependencies = [
+    "heams>=1.0.0",
+    "any-llm-sdk>=1.25.0",
+    "pydantic>=2.12.5",
+]
+
+[project.entry-points."heams.memory_wrappers"]
+privacy_config = "heams_memory_privacy_wrapper.plugin:plugin"
+
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[dependency-groups]
+dev = [
+    "heams-memory-example",
+    "pytest>=9.0.1",
+    "pytest-dotenv>=0.5.2",
+]
+
+[tool.uv.sources]
+heams = { path = "../../python_package", editable = true }
+heams-memory-example = { path = "../heams_memory_example", editable = true }
+
+[tool.pytest.ini_options]
+env_files = [
+    "../../.env",
+]

@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from heams.memory_systems.shared_types import MemoryEntry
+from heams.memory_systems.api import MemoryEntry
 
 from .config import PrivacyConfig
 from .models import RetentionAction, RetentionBatchResult, RetentionDecision

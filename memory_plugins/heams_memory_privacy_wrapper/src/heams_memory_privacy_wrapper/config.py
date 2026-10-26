@@ -3,6 +3,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from heams.memory_systems.api import BaseMemoryWrapperConfig
+
 
 class RetentionMode(str, Enum):
     DETERMINISTIC = "deterministic"
@@ -124,7 +126,11 @@ class DeterministicRetentionRule(BaseModel):
 RetentionConfig.model_rebuild()
 
 
-class PrivacyConfig(BaseModel):
+#: Retention modes that enforce a policy via its `retention.policy_rules` entry.
+_RULE_COMPILING_MODES = frozenset({RetentionMode.DETERMINISTIC, RetentionMode.HYBRID})
+
+
+class PrivacyConfig(BaseMemoryWrapperConfig):
     model_config = ConfigDict(extra="forbid")
 
     enabled: bool = True
@@ -149,3 +155,48 @@ class PrivacyConfig(BaseModel):
     @property
     def is_active(self) -> bool:
         return self.enabled and (self.retention.enabled or self.recall.enabled)
+
+    def check_retention_policies(self, policies: list[str]) -> None:
+        """Reject a configuration that would make retention_policy scores ambiguous.
+
+        Inactive, the wrapper isn't applied and the memory system runs
+        ungoverned, so there is nothing to check.
+        """
+        if not self.is_active:
+            return
+        from .recall import NoOpRecallPolicy, build_recall_policy
+
+        # A recall policy filtering results on top of retention makes a missing
+        # recall ambiguous between "retention blocked it at ingest" and "a recall
+        # policy withheld it separately". Probe with every compiled policy's rules
+        # included: in rule-based modes `set_retention_policy` appends them at
+        # runtime, which would silently activate a recall layer that looks
+        # rule-less in the YAML. llm mode never appends them.
+        retention = self.retention
+        compiles_rules = retention.mode in _RULE_COMPILING_MODES
+        runtime_rules = (
+            [rule for rules in retention.policy_rules.values() for rule in rules]
+            if compiles_rules
+            else []
+        )
+        probe = self.model_copy(update={"rules": [*self.rules, *runtime_rules]})
+        # `build_recall_policy` alone, not the full `PrivacyPolicyEngine`: the
+        # engine also builds a retention policy this check never reads, which can
+        # raise for retention modes unrelated to recall (e.g. the unimplemented
+        # `transform` mode) and does real judge-prompt-building work for
+        # hybrid/llm retention that would be wasted here.
+        if not isinstance(build_recall_policy(probe), NoOpRecallPolicy):
+            raise ValueError(
+                "retention_policy requires privacy_config.recall.enabled: false. "
+                "With a recall policy active, a fact that isn't recalled is "
+                "ambiguous between 'retention blocked it at ingest' and 'a recall "
+                "policy withheld it separately' -- exactly the ambiguity this "
+                "benchmark exists to eliminate."
+            )
+        if compiles_rules and retention.policy_rules:
+            missing = sorted(set(policies) - retention.policy_rules.keys())
+            if missing:
+                raise ValueError(
+                    "retention.policy_rules has no rules for these benchmark "
+                    f"policies: {missing}."
+                )

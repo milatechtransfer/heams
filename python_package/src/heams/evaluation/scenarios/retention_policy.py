@@ -3,21 +3,20 @@
 One sample is one policy's full fact collection: the policy is set on the
 memory system via `set_retention_policy`, then every fact is retained and
 recalled end to end through the normal `retain()`/`recall()` path on
-`BaseMemorySystem`. `retain()` and `recall()` never touch anything
-privacy-specific by themselves, so this scores whether the *composed* memory
-system (governance layer plus backend) actually blocks prohibited facts and
-keeps permitted ones recallable. Setting the policy needs a
-`PrivacyMemoryWrapper`, so the memory-system config must carry an active
-`privacy_config` (`ResolvedExperimentExecutionConfig` enforces this before any
-scenario runs).
+`BaseMemorySystem`. The evaluator relies only on that contract: a retain the
+memory system declined to store carries the `dropped` operation status, so this
+scores whether the memory system, however it governs, blocks prohibited facts
+and keeps permitted ones recallable.
 
-The recall policy must be disabled on any memory-system config this
-benchmark targets (`privacy_config.recall.enabled: false`): otherwise a
-missing recall is ambiguous between "retention blocked it at ingest" and "a
-recall policy withheld it separately", which is exactly the ambiguity this
-benchmark exists to remove. `ResolvedExperimentExecutionConfig`
-(`heams.orchestration.experiment_config`) enforces that precondition once per
-experiment, before any scenario runs.
+A memory system without governance enforces no policy: its default
+`set_retention_policy` logs a `skipped` event, it stores everything, and each
+sample's audit notes say the policy was not enforced, so an ungoverned score
+isn't read as a governed one.
+
+Before any scenario runs, `ResolvedExperimentExecutionConfig`
+(`heams.orchestration.experiment_config`) asks the memory-system configs, through
+the `check_retention_policies` hook, to reject a governed setup that would make
+scores ambiguous, such as a recall policy that withholds stored facts.
 """
 
 from __future__ import annotations
@@ -33,7 +32,7 @@ from heams.evaluation.llm_judge import LlmJudge
 from heams.agents.base import AgentResponse
 from heams.evaluation.base import BaseEvaluator
 from heams.evaluation.schemas import AuditRecord, BaseGroundTruth, EvaluationRecord
-from heams.memory_systems.privacy.wrapper import RETENTION_DROPPED_MESSAGE
+from heams.memory_systems.schemas import MemoryOperationStatus
 from heams.utils import register
 
 if TYPE_CHECKING:
@@ -139,7 +138,7 @@ _SEMANTIC_RECALL_PROMPT = (
 
 
 def _was_blocked_at_ingest(response: AgentResponse) -> bool:
-    return response.answer.strip() == RETENTION_DROPPED_MESSAGE
+    return response.memory_status == MemoryOperationStatus.DROPPED
 
 
 @register("retention_policy")
@@ -195,8 +194,11 @@ class RetentionPolicyEvaluator(BaseEvaluator):
                 f"recall per fact), got {len(agent_responses)}."
             )
 
-        # [0] only confirms the policy was set; a failure there raises
-        # during dispatch, before any audit.
+        # [0] sets the policy; a failure there raises during dispatch, before
+        # any audit. A `skipped` status means the system enforces no policy.
+        policy_enforced = (
+            agent_responses[0].memory_status != MemoryOperationStatus.SKIPPED
+        )
         retain_responses = agent_responses[1 : 1 + len(facts)]
         recall_responses = agent_responses[1 + len(facts) :]
 
@@ -267,6 +269,8 @@ class RetentionPolicyEvaluator(BaseEvaluator):
             f"policy {ground_truth.policy_id}: {len(passed)}/{total} facts "
             "correctly retained-and-recallable or blocked-and-absent."
         )
+        if not policy_enforced:
+            notes += " Policy not enforced: the memory system has no governance."
 
         self._last_audit = AuditRecord(
             is_successful=total > 0 and accuracy == 1.0,

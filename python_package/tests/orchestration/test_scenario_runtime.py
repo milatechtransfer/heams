@@ -9,15 +9,16 @@ from heams.agents.config import (
     MemoryStrategy,
 )
 from heams.environments.alfworld import AlfWorldEnvironmentConfig
-from heams.memory_systems import (
-    PrivacyConfig,
-    PrivacyMemoryWrapper,
-)
-from heams_memory_example.plugin import ExampleMemoryConfig, ExampleMemorySystem
-from heams.memory_systems.api import BaseConsolidationConfig
+from heams_memory_example.plugin import ExampleMemoryConfig
 from heams.memory_systems.base import BaseMemorySystem, MemoryOperationResult
 from heams.memory_systems.factory import MemorySystemVariant
-from heams.memory_systems.schemas import MemoryOperationStatus, MemoryOperationType
+from heams.memory_systems.plugins import (
+    MemoryPluginCatalog,
+    MemoryWrapperPlugin,
+    _builtin_plugins,
+    set_memory_plugin_catalog,
+)
+from pydantic import BaseModel
 from heams.memory_systems.shared_types import MemoryEntry
 from heams.orchestration.scenario_runtime import (
     build_tools,
@@ -82,53 +83,6 @@ def test_consolidate_if_enabled_skips_disabled_consolidation() -> None:
     consolidate_if_enabled(memory)
 
     memory.consolidate.assert_not_called()
-
-
-def test_privacy_wrapped_consolidation_delegates_after_priming(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    consolidate_calls = 0
-    original_consolidate = ExampleMemorySystem.consolidate
-
-    def _track_consolidate(self, *args, **kwargs) -> str:
-        nonlocal consolidate_calls
-        consolidate_calls += 1
-        return original_consolidate(self, *args, **kwargs)
-
-    monkeypatch.setattr(
-        ExampleMemorySystem,
-        "consolidate",
-        _track_consolidate,
-    )
-    memory_variant = MemorySystemVariant(
-        backend_config=ExampleMemoryConfig(
-            consolidation=BaseConsolidationConfig(enabled=True),
-        ),
-        privacy_config=PrivacyConfig(),
-    )
-    scenario = Scenario(
-        id="runtime-private-consolidation",
-        name="runtime-private-consolidation",
-        execution_sequence=[UserStimulus(content="question")],
-    )
-
-    _, memory, _, _, _, ledger = setup_scenario_runtime(
-        scenario,
-        workspace_dir=tmp_path,
-        agent_cfg=_agent_config(),
-        mem_cfg=memory_variant,
-        eval_cfg=MagicMock(),
-        combo_key="combo",
-        sample_index=0,
-        create_agent_fn=lambda *args, **kwargs: MagicMock(),
-        create_evaluator_fn=lambda *args, **kwargs: MagicMock(),
-    )
-
-    assert isinstance(memory, PrivacyMemoryWrapper)
-    assert consolidate_calls == 1
-    assert len(ledger) == 1
-    assert ledger[0].operation_type is MemoryOperationType.CONSOLIDATE
-    assert ledger[0].status is MemoryOperationStatus.SUCCESS
 
 
 def test_setup_scenario_runtime_prefers_memory_priming_capability(
@@ -335,63 +289,6 @@ def test_setup_scenario_runtime_uses_base_memory_priming_fallback(
         ("fact 1", {"order": 1}),
         ("fact 2", {"order": 2}),
     ]
-
-
-def test_setup_scenario_runtime_forwards_memory_entry_privacy_config(
-    tmp_path: Path,
-) -> None:
-    captured: dict[str, object] = {}
-    privacy_config = PrivacyConfig()
-    memory_entry = MemorySystemVariant(
-        backend_config=ExampleMemoryConfig(),
-        privacy_config=privacy_config,
-    )
-
-    class Memory:
-        config = ExampleMemoryConfig()
-
-        def prime_memory_entries(self, entries: list[MemoryEntry]) -> None:
-            pass
-
-        def retain(self, content: str, metadata=None) -> str:
-            return "ok"
-
-        def recall(self, query: str, top_k=None) -> list[str]:
-            return []
-
-        def delete(self, query: str) -> str:
-            return "ok"
-
-        def consolidate(self, context=None, metadata=None) -> str:
-            return "ok"
-
-    scenario = Scenario(
-        id="runtime-privacy-forwarding",
-        name="runtime-privacy-forwarding",
-        memory_systems=[memory_entry],
-        execution_sequence=[UserStimulus(content="question")],
-    )
-
-    def create_memory_fn(*args, **kwargs):
-        captured["config"] = args[0]
-        captured["privacy_config"] = kwargs.get("privacy_config")
-        return Memory()
-
-    setup_scenario_runtime(
-        scenario,
-        workspace_dir=tmp_path,
-        agent_cfg=_agent_config(),
-        mem_cfg=scenario.memory_systems[0],
-        eval_cfg=MagicMock(),
-        combo_key="combo",
-        sample_index=0,
-        create_memory_fn=create_memory_fn,
-        create_agent_fn=lambda *args, **kwargs: MagicMock(),
-        create_evaluator_fn=lambda *args, **kwargs: MagicMock(),
-    )
-
-    assert captured["config"] == memory_entry.backend_config
-    assert captured["privacy_config"] == privacy_config
 
 
 def test_persistent_runtime_hands_backend_a_unique_storage_directory(
@@ -636,3 +533,55 @@ def test_scenario_rejects_removed_memory_access_strategy() -> None:
             memory_access_strategy="agent_default",
             execution_sequence=[UserStimulus(content="question")],
         )
+
+
+def test_setup_scenario_runtime_forwards_the_declared_wrapper_configs(
+    tmp_path: Path,
+) -> None:
+    class _WrapperConfig(BaseModel):
+        label: str
+
+    set_memory_plugin_catalog(
+        MemoryPluginCatalog(
+            _builtin_plugins(),
+            [
+                MemoryWrapperPlugin(
+                    config_key="test_wrapper",
+                    config_model=_WrapperConfig,
+                    wrap=lambda memory, config: memory,
+                )
+            ],
+        )
+    )
+    try:
+        memory_entry = MemorySystemVariant.model_validate(
+            {"backend_config": {"type": "in_context"}, "test_wrapper": {"label": "x"}}
+        )
+        captured: dict[str, object] = {}
+
+        def create_memory_fn(config, **kwargs):
+            captured["config"] = config
+            captured["wrapper_configs"] = kwargs.get("wrapper_configs")
+            return MagicMock(config=config)
+
+        setup_scenario_runtime(
+            Scenario(
+                id="runtime-wrapper-forwarding",
+                name="runtime-wrapper-forwarding",
+                execution_sequence=[UserStimulus(content="question")],
+            ),
+            workspace_dir=tmp_path,
+            agent_cfg=_agent_config(),
+            mem_cfg=memory_entry,
+            eval_cfg=MagicMock(),
+            combo_key="combo",
+            sample_index=0,
+            create_memory_fn=create_memory_fn,
+            create_agent_fn=lambda *args, **kwargs: MagicMock(),
+            create_evaluator_fn=lambda *args, **kwargs: MagicMock(),
+        )
+    finally:
+        set_memory_plugin_catalog(None)
+
+    assert captured["config"] == memory_entry.backend_config
+    assert captured["wrapper_configs"] == {"test_wrapper": _WrapperConfig(label="x")}

@@ -4,8 +4,8 @@ import json
 from contextvars import Token
 from typing import Any
 
-from heams.memory_systems.shared_types import MemoryEntry
-from heams.memory_systems.base import (
+from heams.memory_systems.api import MemoryEntry
+from heams.memory_systems.api import (
     BaseMemorySystem,
     MemoryEventTarget,
     MemoryOperationResult,
@@ -108,7 +108,16 @@ class PrivacyMemoryWrapper(BaseMemorySystem):
                 }
             )
         )
-        return f"Retention policies set: {list(policies)}"
+        summary = f"Retention policies set: {list(policies)}"
+        self._log_memory_event(
+            operation_type="set_retention_policy",
+            status="success",
+            source="runtime",
+            component="privacy_retention",
+            payload={"policies": list(policies)},
+            result={"summary": summary, "enforced": True},
+        )
+        return summary
 
     def attach_event_sink(self, event_sink: MemoryEventTarget | None) -> None:
         super().attach_event_sink(event_sink)
@@ -150,6 +159,22 @@ class PrivacyMemoryWrapper(BaseMemorySystem):
     ) -> str:
         decision = self._policy_engine.evaluate_retain_content(content, metadata)
         if decision.action is RetentionAction.DROP:
+            self._log_memory_event(
+                operation_type="retain",
+                status="dropped",
+                source="runtime",
+                component="privacy_retention",
+                payload={
+                    "field_name": (metadata or {}).get("field_name"),
+                    "content_length": len(content),
+                },
+                result={
+                    "action": decision.action.value,
+                    "reason": decision.reason,
+                    "policy_id": decision.policy_id,
+                    "decision_source": decision.decision_source,
+                },
+            )
             return RETENTION_DROPPED_MESSAGE
 
         retained_metadata = dict(metadata or {})
@@ -232,7 +257,7 @@ class PrivacyMemoryWrapper(BaseMemorySystem):
                 operation_type="retain",
                 status="success"
                 if decision.action is RetentionAction.STORE
-                else "skipped",
+                else "dropped",
                 source="runtime",
                 component="privacy_retention",
                 payload={
