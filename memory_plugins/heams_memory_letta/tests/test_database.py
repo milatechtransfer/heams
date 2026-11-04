@@ -119,6 +119,27 @@ def test_an_empty_slurm_tmpdir_falls_back_to_the_temp_dir(
         postgres.stop()
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="POSIX signals")
+def test_a_binary_killed_by_a_signal_says_so(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, temp_dir: Path
+) -> None:
+    # A crash prints nothing, which once left an error with no reason in it.
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    crash = bin_dir / "crash"
+    crash.write_text("#!/bin/sh\nkill -SEGV $$\n")
+    crash.chmod(0o755)
+    monkeypatch.setattr(database, "_postgres_bin", lambda: bin_dir)
+    monkeypatch.setattr(database, "ensure_migrations", lambda: temp_dir)
+    monkeypatch.delenv("SLURM_TMPDIR", raising=False)
+    postgres = database.LocalPostgres()
+    try:
+        with pytest.raises(RuntimeError, match="crash failed:\nkilled by SIGSEGV"):
+            postgres._run("crash")
+    finally:
+        postgres.stop()
+
+
 @pytest.fixture()
 def default_sigterm():
     """Starting a database installs a SIGTERM handler; restore the original."""
@@ -136,11 +157,12 @@ def test_a_private_database_starts_with_letta_schema_and_is_removed() -> None:
     try:
         postgres.start()
         assert postgres.uri.endswith(f"?host={socket_dir}")
-        revision = postgres._run(
-            "psql", *postgres._tcp_args(), "-d", "letta",
-            "-Atc", "select version_num from alembic_version",
-        )  # fmt: skip
-        assert revision.strip() == database._SCHEMA_REVISION
+        rows = postgres._execute("letta", "select version_num from alembic_version")
+        assert rows == [(database._SCHEMA_REVISION,)]
+        rows = postgres._execute(
+            "letta", "select 1 from pg_extension where extname = 'vector'"
+        )
+        assert rows == [(1,)]
     finally:
         postgres.stop()
     assert not root.exists()

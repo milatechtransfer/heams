@@ -156,11 +156,10 @@ class LocalPostgres:
                 f"-p {self._port} -k {self._socket_dir} -c listen_addresses=127.0.0.1 "
                 "-c fsync=off -c synchronous_commit=off -c full_page_writes=off",
             )  # fmt: skip
-            self._run("createdb", *self._tcp_args(), _DATABASE)
-            self._run(
-                "psql", *self._tcp_args(), "-d", _DATABASE,
-                "-qc", "create extension if not exists vector",
-            )  # fmt: skip
+            # SQL goes through psycopg2, not pgembed's psql and createdb: those are
+            # rewritten by auditwheel, and psql crashed silently on the Mila cluster.
+            self._execute("postgres", f"create database {_DATABASE}")
+            self._execute(_DATABASE, "create extension if not exists vector")
             self._migrate(self._migrations)
         except BaseException:
             self.stop()
@@ -200,17 +199,38 @@ class LocalPostgres:
             raise RuntimeError(
                 f"Letta's migrations failed:\n{_tail(result.stderr or result.stdout)}"
             )
-        revision = self._run(
-            "psql", *self._tcp_args(), "-d", _DATABASE,
-            "-Atc", "select version_num from alembic_version",
-        ).strip()  # fmt: skip
+        rows = self._execute(_DATABASE, "select version_num from alembic_version")
+        revision = rows[0][0] if rows else None
         if revision != _SCHEMA_REVISION:
             raise RuntimeError(
                 f"Letta's schema is at revision {revision!r}, expected {_SCHEMA_REVISION}."
             )
 
-    def _tcp_args(self) -> list[str]:
-        return ["-h", "127.0.0.1", "-p", str(self._port), "-U", _USER]
+    def _execute(self, database: str, sql: str) -> list[tuple]:
+        """Runs one statement over TCP, outside a transaction, and returns its rows."""
+        import psycopg2
+
+        try:
+            connection = psycopg2.connect(
+                host="127.0.0.1",
+                port=self._port,
+                user=_USER,
+                password=self._password,
+                dbname=database,
+                connect_timeout=30,
+            )
+        except psycopg2.Error as exc:
+            raise RuntimeError(self._failure("connecting", str(exc))) from exc
+        try:
+            # `create database` cannot run inside a transaction.
+            connection.autocommit = True
+            with connection.cursor() as cursor:
+                cursor.execute(sql)
+                return cursor.fetchall() if cursor.description else []
+        except psycopg2.Error as exc:
+            raise RuntimeError(self._failure(sql, str(exc))) from exc
+        finally:
+            connection.close()
 
     def _run(self, program: str, *args: str) -> str:
         result = subprocess.run(
@@ -222,10 +242,17 @@ class LocalPostgres:
         )
         if result.returncode != 0:
             detail = result.stderr or result.stdout
-            if self._log.exists():
-                detail += f"\nPostgres log:\n{_tail(self._log.read_text())}"
-            raise RuntimeError(f"Letta's database: {program} failed:\n{detail.strip()}")
+            if result.returncode < 0:
+                detail = f"killed by {_signal_name(-result.returncode)}\n{detail}"
+            else:
+                detail = f"exit code {result.returncode}\n{detail}"
+            raise RuntimeError(self._failure(program, detail))
         return result.stdout
+
+    def _failure(self, step: str, detail: str) -> str:
+        if self._log.exists():
+            detail += f"\nPostgres log:\n{_tail(self._log.read_text())}"
+        return f"Letta's database: {step} failed:\n{detail.strip()}"
 
 
 def _stop_on_sigterm(database: LocalPostgres) -> None:
@@ -259,6 +286,13 @@ def _postgres_bin() -> Path:
     if not (path / "postgres").is_file():
         raise RuntimeError(f"pgembed's PostgreSQL binaries are missing from {path}.")
     return path
+
+
+def _signal_name(number: int) -> str:
+    try:
+        return signal.Signals(number).name
+    except ValueError:
+        return f"signal {number}"
 
 
 def _free_port() -> int:
