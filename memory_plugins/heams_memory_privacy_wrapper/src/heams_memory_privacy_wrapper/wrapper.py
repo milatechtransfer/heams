@@ -4,8 +4,8 @@ import json
 from contextvars import Token
 from typing import Any
 
-from heams.memory_systems.shared_types import MemoryEntry
-from heams.memory_systems.base import (
+from heams.memory_systems.api import MemoryEntry
+from heams.memory_systems.api import (
     BaseMemorySystem,
     MemoryEventTarget,
     MemoryOperationResult,
@@ -108,7 +108,16 @@ class PrivacyMemoryWrapper(BaseMemorySystem):
                 }
             )
         )
-        return f"Retention policies set: {list(policies)}"
+        summary = f"Retention policies set: {list(policies)}"
+        self._log_memory_event(
+            operation_type="set_retention_policy",
+            status="success",
+            source="runtime",
+            component="privacy_retention",
+            payload={"policies": list(policies)},
+            result={"summary": summary, "enforced": True},
+        )
+        return summary
 
     def attach_event_sink(self, event_sink: MemoryEventTarget | None) -> None:
         super().attach_event_sink(event_sink)
@@ -150,6 +159,22 @@ class PrivacyMemoryWrapper(BaseMemorySystem):
     ) -> str:
         decision = self._policy_engine.evaluate_retain_content(content, metadata)
         if decision.action is RetentionAction.DROP:
+            self._log_memory_event(
+                operation_type="retain",
+                status="dropped",
+                source="runtime",
+                component="privacy_retention",
+                payload={
+                    "field_name": (metadata or {}).get("field_name"),
+                    "content_length": len(content),
+                },
+                result={
+                    "action": decision.action.value,
+                    "reason": decision.reason,
+                    "policy_id": decision.policy_id,
+                    "decision_source": decision.decision_source,
+                },
+            )
             return RETENTION_DROPPED_MESSAGE
 
         retained_metadata = dict(metadata or {})
@@ -183,8 +208,10 @@ class PrivacyMemoryWrapper(BaseMemorySystem):
             decision = self._policy_engine.evaluate_recall_content(
                 content, metadata, query=query
             )
+            # `privacy_recall`, not `recall`: `inner.recall` above already
+            # logged the recall call, so these are per-candidate audits.
             self._log_memory_event(
-                operation_type="recall",
+                operation_type="privacy_recall",
                 status="success"
                 if decision.action is RecallAction.EXPOSE
                 else "skipped",
@@ -228,11 +255,14 @@ class PrivacyMemoryWrapper(BaseMemorySystem):
             entries
         )
         for entry, decision in zip(entries, batch_result.decisions, strict=True):
+            stored = decision.action is RetentionAction.STORE
+            # A stored entry goes on to `inner`, which logs its own `retain`
+            # event, so the decision is a `privacy_retain` audit; logging it as
+            # `retain` counted every stored entry twice. A dropped entry never
+            # reaches `inner`, so this event is its only `retain` record.
             self._log_memory_event(
-                operation_type="retain",
-                status="success"
-                if decision.action is RetentionAction.STORE
-                else "skipped",
+                operation_type="privacy_retain" if stored else "retain",
+                status="success" if stored else "dropped",
                 source="runtime",
                 component="privacy_retention",
                 payload={

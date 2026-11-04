@@ -21,6 +21,14 @@ class AgentResponse(BaseModel):
         exclude_if=lambda value: not value,
         description="Whether the model request required context history truncation.",
     )
+    memory_status: str | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description=(
+            "For a direct memory operation, the status of the memory event it "
+            "logged, e.g. `dropped` when a governed system declined to store it."
+        ),
+    )
 
 
 class BaseAgent(ABC):

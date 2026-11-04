@@ -73,7 +73,7 @@ should load
 | Owner | Examples |
 |-------|----------|
 | Agent config | `model_id`, instructions, `memory_strategy` |
-| Memory-system config | backend `type`, `top_k`, file path, privacy wrapper |
+| Memory-system config | backend `type`, `top_k`, file path, wrapper blocks such as `privacy_config` |
 | Benchmark config | dataset path, `limit` / `limit_stimuli`, task prompts |
 | Run config | `run_name`, named experiment matrix |
 | CLI invocation | resolved artifact output directory |

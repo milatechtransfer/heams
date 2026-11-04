@@ -101,7 +101,7 @@ for details about the result artefacts that are created by experiments.
 | [Contextual Integrity](benchmarks/contextual_integrity.md) | Runnable via `heams run` | Disclosure / leakage scenarios with CI LLM judge |
 | [STALE](benchmarks/stale.md) | Runnable via `heams run` | Memory-staleness detection across three probing dimensions with LLM-as-judge grading |
 | [Erasability & Editability](benchmarks/erasability_editability.md) | Runnable via `heams run` | Explicit-deletion and cascade-update tasks (MEME corpus) with LLM-as-judge grading |
-| [Retention policy](benchmarks/retention_policy.md) | Runnable via `heams run` | Whether a privacy layer blocks prohibited facts at ingest and keeps permitted ones recallable |
+| [Retention policy](benchmarks/retention_policy.md) | Runnable via `heams run` | Whether a memory system's governance blocks prohibited facts at ingest and keeps permitted ones recallable |
 
 ## Contributing
 

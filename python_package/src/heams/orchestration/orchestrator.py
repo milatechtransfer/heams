@@ -274,6 +274,7 @@ class Orchestrator:
                         build_ground_truth=self._build_ground_truth,
                         on_stimulus_complete=emit_stimulus,
                         trace_collector=trace_collector,
+                        memory_ledger=self.active_memory_ledger,
                     )
                 except (ValueError, NotImplementedError):
                     # Programmer errors (malformed scenario, unimplemented

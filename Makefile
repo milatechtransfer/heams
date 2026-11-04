@@ -27,6 +27,7 @@ test-ci: ## Run CI-safe tests, excluding integration and Ollama tests
 	$(MAKE) -C memory_plugins/heams_memory_mem0 test-ci UV_RUN="$(PLUGIN_UV_RUN)"
 	$(MAKE) -C memory_plugins/heams_memory_hipporag test-ci
 	$(MAKE) -C memory_plugins/heams_memory_letta test-ci UV_RUN="$(PLUGIN_UV_RUN)"
+	$(MAKE) -C memory_plugins/heams_memory_privacy_wrapper test-ci UV_RUN="$(PLUGIN_UV_RUN)"
 
 ollama-install: ## Ensure Ollama is installed locally
 	$(MAKE) -C python_package ollama-install

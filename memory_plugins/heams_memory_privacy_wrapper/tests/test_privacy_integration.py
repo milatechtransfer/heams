@@ -4,6 +4,9 @@ from typing import Any
 import pytest
 
 from heams.memory_systems import (
+    create_memory,
+)
+from heams_memory_privacy_wrapper import (
     MEMORY_RETENTION_ACTION_KEY,
     MEMORY_RETENTION_DECISION_SOURCE_KEY,
     PrivacyConfig,
@@ -12,7 +15,6 @@ from heams.memory_systems import (
     RecallMode,
     RecallVerdict,
     RetentionMode,
-    create_memory,
     wrap_memory_with_privacy,
 )
 from heams.memory_systems.base import (
@@ -21,7 +23,7 @@ from heams.memory_systems.base import (
     MemoryOperationResult,
 )
 from heams_memory_example.plugin import ExampleMemoryConfig
-from heams.memory_systems.privacy.wrapper import _parse_rendered_recall_entry
+from heams_memory_privacy_wrapper.wrapper import _parse_rendered_recall_entry
 from heams.memory_systems.shared_types import MemoryEntry, render_tool_memory_entry
 
 
@@ -235,13 +237,14 @@ def test_privacy_wrapper_emits_priming_decision_events() -> None:
 
     assert len(ledger) == 2
     stored_event, dropped_event = ledger
-    assert stored_event.operation_type.value == "retain"
+    assert stored_event.operation_type.value == "privacy_retain"
     assert stored_event.status.value == "success"
     assert stored_event.payload["field_name"] == "Name"
     assert stored_event.result["action"] == "store"
     assert stored_event.payload["run_context"]["scenario_id"] == "CI-train-0000"
 
-    assert dropped_event.status.value == "skipped"
+    assert dropped_event.operation_type.value == "retain"
+    assert dropped_event.status.value == "dropped"
     assert dropped_event.payload["field_name"] == "SecretNotes"
     assert dropped_event.result["action"] == "drop"
     assert dropped_event.result["policy_id"] == "block-secret"
@@ -439,6 +442,7 @@ def test_privacy_wrapper_recall_emits_audit_events_for_each_candidate() -> None:
     assert len(recall_decision_events) == 2
     withheld_event, exposed_event = recall_decision_events
     assert withheld_event.component == "privacy_recall"
+    assert withheld_event.operation_type.value == "privacy_recall"
     assert withheld_event.status.value == "skipped"
     assert withheld_event.result["action"] == "withhold"
     assert withheld_event.result["policy_id"] == "block-secret"
@@ -514,7 +518,7 @@ def test_privacy_wrapper_recall_does_not_share_cache_across_wrapper_instances(
         return RecallVerdict(action="expose", reasoning="")
 
     monkeypatch.setattr(
-        "heams.memory_systems.privacy.recall_policy_hybrid.judge_recall_content",
+        "heams_memory_privacy_wrapper.recall_policy_hybrid.judge_recall_content",
         _fake_judge,
     )
 
@@ -564,15 +568,17 @@ def test_direct_retention_adherence_differs_only_when_privacy_is_active(
     privacy_enabled = create_memory(
         ExampleMemoryConfig(top_k=10),
         storage_dir=tmp_path / "privacy",
-        privacy_config=PrivacyConfig(
-            rules=[
-                {
-                    "rule_id": "block-secret",
-                    "content_substrings": ["secret"],
-                }
-            ],
-            retention={"mode": RetentionMode.DETERMINISTIC},
-        ),
+        wrapper_configs={
+            "privacy_config": PrivacyConfig(
+                rules=[
+                    {
+                        "rule_id": "block-secret",
+                        "content_substrings": ["secret"],
+                    }
+                ],
+                retention={"mode": RetentionMode.DETERMINISTIC},
+            )
+        },
     )
     entries = [
         MemoryEntry(content="Allowed fact about tea", metadata={"source": "loader"}),
@@ -593,13 +599,46 @@ def test_direct_retention_adherence_differs_only_when_privacy_is_active(
     ]
 
 
+def test_privacy_wrapped_priming_logs_one_retain_per_entry(tmp_path) -> None:
+    """Regression test: the wrapper logged its store decision as `retain` and
+    the wrapped backend then logged its own `retain`, so every stored entry
+    counted as two retains in the efficiency metrics."""
+    memory = create_memory(
+        ExampleMemoryConfig(top_k=10),
+        storage_dir=tmp_path,
+        wrapper_configs={
+            "privacy_config": PrivacyConfig(
+                rules=[{"rule_id": "block-secret", "content_substrings": ["secret"]}],
+                retention={"mode": RetentionMode.DETERMINISTIC},
+            )
+        },
+    )
+    ledger = []
+    memory.attach_event_sink(ledger)
+
+    memory.prime_memory_entries(
+        [
+            MemoryEntry(content="Allowed fact about tea"),
+            MemoryEntry(content="Another allowed fact"),
+            MemoryEntry(content="Secret launch code is 1234"),
+        ]
+    )
+
+    retain_events = [e for e in ledger if e.operation_type.value == "retain"]
+    assert [e.status.value for e in retain_events].count("success") == 2
+    assert [e.status.value for e in retain_events].count("dropped") == 1
+    assert len(retain_events) == 3
+    audit_events = [e for e in ledger if e.operation_type.value == "privacy_retain"]
+    assert len(audit_events) == 2
+
+
 def test_privacy_wrapped_backend_skips_retention_without_rules(
     tmp_path,
 ) -> None:
     memory = create_memory(
         ExampleMemoryConfig(top_k=5),
         storage_dir=tmp_path,
-        privacy_config=PrivacyConfig(),
+        wrapper_configs={"privacy_config": PrivacyConfig()},
     )
 
     memory.retain("alpha")
@@ -647,7 +686,7 @@ def test_wrap_memory_with_privacy_can_disable_existing_wrapper(tmp_path) -> None
     memory = create_memory(
         ExampleMemoryConfig(top_k=5),
         storage_dir=tmp_path,
-        privacy_config=PrivacyConfig(),
+        wrapper_configs={"privacy_config": PrivacyConfig()},
     )
 
     unwrapped = wrap_memory_with_privacy(memory, PrivacyConfig(enabled=False))
@@ -741,9 +780,20 @@ def _policy_wrapper(
     )
 
 
-def test_base_memory_system_rejects_runtime_retention_policy() -> None:
-    with pytest.raises(NotImplementedError, match="RecordingMemory"):
-        RecordingMemory().set_retention_policy([PET_POLICY])
+def test_base_memory_system_runs_ungoverned_under_a_retention_policy() -> None:
+    ledger: list = []
+    memory = RecordingMemory()
+    memory.attach_event_sink(ledger)
+
+    summary = memory.set_retention_policy([PET_POLICY])
+    memory.retain("My dog is Rex.")
+
+    assert "No retention policy enforced" in summary
+    assert [content for content, _ in memory.retain_calls] == ["My dog is Rex."]
+    [event, _] = ledger
+    assert event.operation_type == "set_retention_policy"
+    assert event.status == "skipped"
+    assert event.result["enforced"] is False
 
 
 def test_set_retention_policy_enforces_compiled_rules_on_top_of_baseline() -> None:

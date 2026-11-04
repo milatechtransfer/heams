@@ -16,9 +16,12 @@ from .base import (
 )
 from .plugins import (
     MEMORY_PLUGIN_API_VERSION,
+    BaseMemoryWrapperConfig,
     MemoryPlugin,
     MemoryPluginFactory,
     MemoryRuntimeContext,
+    MemoryWrapFunction,
+    MemoryWrapperPlugin,
 )
 from .schemas import (
     MemoryOperationEvent,
@@ -32,6 +35,7 @@ __all__ = [
     "BaseConsolidationConfig",
     "BaseMemoryConfig",
     "BaseMemorySystem",
+    "BaseMemoryWrapperConfig",
     "MEMORY_PLUGIN_API_VERSION",
     "MemoryEntry",
     "MemoryEventLedger",
@@ -45,5 +49,7 @@ __all__ = [
     "MemoryPlugin",
     "MemoryPluginFactory",
     "MemoryRuntimeContext",
+    "MemoryWrapFunction",
+    "MemoryWrapperPlugin",
     "render_tool_memory_entry",
 ]

@@ -69,6 +69,15 @@ class BaseMemoryConfig(BaseModel):
     def with_runtime_storage(self, storage_dir: Path) -> Self:
         return self
 
+    def check_retention_policies(self, policies: list[str]) -> None:
+        """Fail before a run if this system can't enforce `policies` as configured.
+
+        Called once per retention_policy experiment, before any scenario runs.
+        A governed system raises `ValueError` for a configuration that would
+        make the benchmark's scores ambiguous; the default does nothing, so a
+        system without governance always passes and runs ungoverned.
+        """
+
 
 MemoryEventSink = Callable[["MemoryOperationEvent"], None]
 MemoryEventLedger = MutableSequence["MemoryOperationEvent"]
@@ -456,12 +465,22 @@ class BaseMemorySystem(ABC):
 
         Returns:
             A string confirming the policies now in force.
+
+        The default enforces nothing: it logs a `skipped`
+        `set_retention_policy` event, so results show the system ran
+        ungoverned, and the system keeps storing everything.
         """
-        raise NotImplementedError(
-            f"{type(self).__name__} does not support runtime retention "
-            "policies; configure `privacy_config` so it is wrapped in "
-            "PrivacyMemoryWrapper."
+        summary = (
+            f"No retention policy enforced: {type(self).__name__} has no governance."
         )
+        self._log_memory_event(
+            operation_type="set_retention_policy",
+            status="skipped",
+            source="runtime",
+            payload={"policies": list(policies)},
+            result={"summary": summary, "enforced": False},
+        )
+        return summary
 
     def prime_memory_entries(self, entries: list[MemoryEntry]) -> None:
         """Prime memory using the public retain API when a backend has no batch path."""

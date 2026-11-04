@@ -10,8 +10,6 @@ from heams.memory_systems import (
     MemorySystemConfig,
     NoMemoryConfig,
     NoMemoryMemorySystem,
-    PrivacyConfig,
-    PrivacyMemoryWrapper,
     create_memory,
 )
 from heams.memory_systems.base import (
@@ -19,7 +17,7 @@ from heams.memory_systems.base import (
     BaseMemorySystem,
     MemoryOperationResult,
 )
-from heams_memory_example.plugin import ExampleMemoryConfig, ExampleMemorySystem
+from heams_memory_example.plugin import ExampleMemoryConfig
 
 
 class _RuntimeStorageConfig(BaseMemoryConfig):
@@ -82,32 +80,6 @@ def test_no_memory_config_dispatches_to_no_memory_memory_system(tmp_path) -> Non
     assert memory.config.name == "none"
     assert memory.config.top_k == 1
     assert memory.recall("anything") == []
-
-
-def test_create_memory_wraps_backend_when_privacy_is_enabled(tmp_path) -> None:
-    memory = create_memory(
-        ExampleMemoryConfig(name="wrapped", top_k=3),
-        storage_dir=tmp_path,
-        privacy_config=PrivacyConfig(),
-    )
-
-    assert isinstance(memory, PrivacyMemoryWrapper)
-    assert isinstance(memory.inner, ExampleMemorySystem)
-    assert memory.config is memory.inner.config
-    assert memory.config.name == "wrapped"
-
-
-def test_create_memory_returns_unwrapped_backend_when_privacy_is_disabled(
-    tmp_path,
-) -> None:
-    memory = create_memory(
-        ExampleMemoryConfig(name="plain", top_k=3),
-        storage_dir=tmp_path,
-        privacy_config=PrivacyConfig(enabled=False),
-    )
-
-    assert isinstance(memory, ExampleMemorySystem)
-    assert not isinstance(memory, PrivacyMemoryWrapper)
 
 
 def test_memory_system_config_union_round_trips_all_variants() -> None:

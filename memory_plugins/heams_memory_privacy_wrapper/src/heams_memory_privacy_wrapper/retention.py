@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Protocol, runtime_checkable
 
-from heams.memory_systems.shared_types import MemoryEntry
+from heams.memory_systems.api import MemoryEntry
 
 from .config import PrivacyConfig, RetentionMode
 from .models import RetentionBatchResult, RetentionDecision

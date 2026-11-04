@@ -1,6 +1,6 @@
 import inspect
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from contextlib import nullcontext
 from typing import Any
 
@@ -9,6 +9,7 @@ from heams.evaluation.factory import EvaluatorConfig
 from heams.evaluation.schemas import AuditRecord, BaseGroundTruth
 from heams.evaluation.trace_utils import iter_tool_calls
 from heams.execution_traces import ExecutionTraceCollector
+from heams.memory_systems.schemas import MemoryOperationEvent
 from heams.results import AgentTurn, ToolResult
 from heams.scenarios.actions import (
     AgentManipulation,
@@ -29,6 +30,20 @@ _REPORT_TOOL_NAMES = {"finish_task", "step_task"}
 #: `set_retention_policy` lets a scenario choose which user policy the
 #: governance layer enforces, so one config can cover every policy.
 _DISPATCHABLE_MEMORY_COMMANDS = frozenset({"retain", "recall", "set_retention_policy"})
+
+
+def _operation_status(
+    memory_ledger: Sequence[MemoryOperationEvent] | None,
+    start: int | None,
+    command: str,
+) -> str | None:
+    """Status of the last `command` event the memory system logged since `start`."""
+    if memory_ledger is None or start is None:
+        return None
+    for event in reversed(memory_ledger[start:]):
+        if event.operation_type == command:
+            return str(getattr(event.status, "value", event.status))
+    return None
 
 
 def failed_audit(*, failed_key: str, audit_notes: str) -> AuditRecord:
@@ -116,6 +131,7 @@ def execute_scenario(
     build_ground_truth: Callable[[Scenario, EvaluatorConfig], BaseGroundTruth],
     on_stimulus_complete: Callable[[int, bool], None] | None = None,
     trace_collector: ExecutionTraceCollector | None = None,
+    memory_ledger: Sequence[MemoryOperationEvent] | None = None,
 ) -> tuple[AuditRecord, list[AgentTurn], list[AgentResponse]]:
     agent_responses: list[AgentResponse] = []
     transcript: list[AgentTurn] = []
@@ -280,6 +296,7 @@ def execute_scenario(
                     "implement."
                 )
             started_ns = time.time_ns()
+            ledger_start = len(memory_ledger) if memory_ledger is not None else None
             bind_run_context = getattr(memory_system, "bind_run_context", None)
             token = (
                 bind_run_context({"step_index": step_index})
@@ -328,7 +345,14 @@ def execute_scenario(
                     status="ok",
                     step_index=step_index,
                 )
-            agent_responses.append(AgentResponse(answer=str(outcome)))
+            agent_responses.append(
+                AgentResponse(
+                    answer=str(outcome),
+                    memory_status=_operation_status(
+                        memory_ledger, ledger_start, meta_action.command
+                    ),
+                )
+            )
         elif isinstance(meta_action, AgentManipulation):
             if meta_action.command != "reset_state":
                 raise ValueError(

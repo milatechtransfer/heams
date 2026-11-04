@@ -401,6 +401,8 @@ def enhance_component_metrics(
             MemoryOperationType.CONSOLIDATE.value, 0
         )
         successful_retain_count = 0
+        # Content a governed system declined under its policy: not a failed retain.
+        dropped_retain_count = 0
         successful_delete_count = 0
         successful_consolidate_count = 0
 
@@ -430,6 +432,11 @@ def enhance_component_metrics(
                 and event.status == MemoryOperationStatus.SUCCESS
             ):
                 successful_retain_count += 1
+            elif (
+                event.operation_type == MemoryOperationType.RETAIN
+                and event.status == MemoryOperationStatus.DROPPED
+            ):
+                dropped_retain_count += 1
             elif (
                 event.operation_type == MemoryOperationType.DELETE
                 and event.status == MemoryOperationStatus.SUCCESS
@@ -492,8 +499,11 @@ def enhance_component_metrics(
                     if event.status == MemoryOperationStatus.SUCCESS:
                         successful_retain_content_bytes.append(content_bytes)
 
+        attempted_retain_total = retain_total - dropped_retain_count
         retain_success_rate = (
-            successful_retain_count / retain_total if retain_total > 0 else None
+            successful_retain_count / attempted_retain_total
+            if attempted_retain_total > 0
+            else None
         )
         delete_success_rate = (
             successful_delete_count / delete_total if delete_total > 0 else None

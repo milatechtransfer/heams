@@ -30,7 +30,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-from heams.memory_systems.shared_types import MemoryEntry
+from heams.memory_systems.api import MemoryEntry
 
 from .config import DeterministicRetentionRule, PrivacyConfig
 from .models import RetentionAction, RetentionBatchResult, RetentionDecision
@@ -117,7 +117,7 @@ def judge_retention_content(
     """
     import any_llm
 
-    from heams.utils.event_loop import ensure_thread_event_loop
+    from ._event_loop import ensure_thread_event_loop
 
     if matched_category is not None:
         user_content = (

@@ -80,7 +80,7 @@ The file names are relative to one directory per component:
 | Directory | Describes | Example fields |
 |-----------|-----------|----------------|
 | `configs/agents/` | The agent under test | `model_id`, `memory_strategy`, `instructions`, `model_args` |
-| `configs/memory_systems/` | The memory system and its settings | `backend_config.type` (one of the names from `make memory-list`), `top_k`, optional `privacy_config` |
+| `configs/memory_systems/` | The memory system and its settings | `backend_config.type` (one of the names from `make memory-list`), `top_k`, optional `privacy_config` (the privacy wrapper) |
 | `configs/benchmarks/` | The benchmark, its dataset slice and its evaluator | `type`, `limit`, `evaluator` (for example an LLM judge and its model) |
 
 The smoke benchmark configs in `configs/benchmarks/smoke_campaign/` set

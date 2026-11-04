@@ -136,7 +136,7 @@ use globs. Missing files fail validation before execution.
 | Component | Owns |
 |-----------|------|
 | Agent (`configs/agents/`) | `model_id`, instructions, `memory_strategy`, tool limits, model args |
-| Memory system (`configs/memory_systems/`) | Backend type, `top_k`, storage knobs, optional privacy wrapper |
+| Memory system (`configs/memory_systems/`) | Backend type, `top_k`, storage knobs, optional wrapper blocks such as `privacy_config` |
 | Benchmark (`configs/benchmarks/`) | Workload `type`, `examples_dir`, `limit` / `limit_stimuli`, prompts, evaluator |
 
 For runnable benchmark configurations, see [LoCoMo](benchmarks/locomo.md),

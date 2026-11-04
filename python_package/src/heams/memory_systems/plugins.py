@@ -5,12 +5,17 @@ from dataclasses import dataclass
 from importlib import metadata
 from pathlib import Path
 
+from pydantic import BaseModel
+
 from .base import BaseMemoryConfig, BaseMemorySystem, MemoryEventTarget
 
 MEMORY_PLUGIN_API_VERSION = 2
 MemoryPluginFactory = Callable[
     [BaseMemoryConfig, "MemoryRuntimeContext"], BaseMemorySystem
 ]
+MemoryWrapFunction = Callable[[BaseMemorySystem, BaseModel], BaseMemorySystem]
+#: `MemorySystemVariant`'s own fields, which no wrapper may claim as its key.
+RESERVED_WRAPPER_KEYS = frozenset({"id", "backend_config", "wrapper_configs"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,13 +40,46 @@ class MemoryPlugin:
     """Human-readable name for reports and the results browser."""
 
 
-class MemoryPluginCatalog:
-    """Validated catalog of memory plugin descriptors."""
+class BaseMemoryWrapperConfig(BaseModel):
+    """Base for memory wrapper configs, with the same pre-run hook as backends."""
 
-    def __init__(self, plugins: Iterable[MemoryPlugin] = ()) -> None:
+    def check_retention_policies(self, policies: list[str]) -> None:
+        """Fail before a run if this wrapper can't enforce `policies` as configured.
+
+        See `BaseMemoryConfig.check_retention_policies`; the default does nothing.
+        """
+
+
+@dataclass(frozen=True, slots=True)
+class MemoryWrapperPlugin:
+    """Descriptor for a plugin that wraps any memory system.
+
+    A memory-system config enables it with a top-level block under
+    ``config_key``, next to ``backend_config``; ``wrap`` receives the built
+    memory system and that block validated as ``config_model``.
+    """
+
+    config_key: str
+    config_model: type[BaseModel]
+    wrap: MemoryWrapFunction
+    api_version: int = MEMORY_PLUGIN_API_VERSION
+    provider: str = "builtin"
+
+
+class MemoryPluginCatalog:
+    """Validated catalog of memory plugin and memory wrapper descriptors."""
+
+    def __init__(
+        self,
+        plugins: Iterable[MemoryPlugin] = (),
+        wrappers: Iterable[MemoryWrapperPlugin] = (),
+    ) -> None:
         self._plugins: dict[str, MemoryPlugin] = {}
+        self._wrappers: dict[str, MemoryWrapperPlugin] = {}
         for plugin in plugins:
             self.register(plugin)
+        for wrapper in wrappers:
+            self.register_wrapper(wrapper)
 
     def register(self, plugin: MemoryPlugin) -> None:
         if plugin.api_version != MEMORY_PLUGIN_API_VERSION:
@@ -83,6 +121,39 @@ class MemoryPluginCatalog:
 
     def plugins(self) -> tuple[MemoryPlugin, ...]:
         return tuple(self._plugins[name] for name in self.names())
+
+    def register_wrapper(self, wrapper: MemoryWrapperPlugin) -> None:
+        if wrapper.api_version != MEMORY_PLUGIN_API_VERSION:
+            raise ValueError(
+                f"Memory wrapper {wrapper.config_key!r} requires API "
+                f"{wrapper.api_version}; this runner supports "
+                f"{MEMORY_PLUGIN_API_VERSION}."
+            )
+        if not isinstance(wrapper.config_key, str) or not wrapper.config_key:
+            raise TypeError("Memory wrapper config_key must be a non-empty string.")
+        if wrapper.config_key in RESERVED_WRAPPER_KEYS:
+            raise ValueError(
+                f"Memory wrapper key {wrapper.config_key!r} is reserved for the "
+                "memory-system config itself."
+            )
+        if not issubclass(wrapper.config_model, BaseModel):
+            raise TypeError(
+                f"Memory wrapper {wrapper.config_key!r} config_model must inherit "
+                "pydantic.BaseModel."
+            )
+        if wrapper.config_key in self._wrappers:
+            existing = self._wrappers[wrapper.config_key]
+            raise ValueError(
+                f"Duplicate memory wrapper key {wrapper.config_key!r} provided by "
+                f"{existing.provider!r} and {wrapper.provider!r}."
+            )
+        self._wrappers[wrapper.config_key] = wrapper
+
+    def wrapper(self, config_key: str) -> MemoryWrapperPlugin | None:
+        return self._wrappers.get(config_key)
+
+    def wrapper_keys(self) -> tuple[str, ...]:
+        return tuple(sorted(self._wrappers))
 
     def validate_config(self, value: object) -> BaseMemoryConfig:
         if isinstance(value, BaseMemoryConfig):
@@ -132,13 +203,17 @@ def _builtin_plugins() -> tuple[MemoryPlugin, ...]:
     )
 
 
-def _memory_entry_points() -> Iterable[metadata.EntryPoint]:
+def _entry_points(group: str) -> Iterable[metadata.EntryPoint]:
     discovered = metadata.entry_points()
     if hasattr(discovered, "select"):
-        return discovered.select(group="heams.memory_systems")
+        return discovered.select(group=group)
     if hasattr(discovered, "get"):
-        return discovered.get("heams.memory_systems", [])
-    return discovered
+        return discovered.get(group, [])
+    return [entry for entry in discovered if getattr(entry, "group", None) == group]
+
+
+def _memory_entry_points() -> Iterable[metadata.EntryPoint]:
+    return _entry_points("heams.memory_systems")
 
 
 def memory_display_names() -> dict[str, str]:
@@ -165,6 +240,22 @@ def memory_display_names() -> dict[str, str]:
 
 def discover_memory_plugins() -> MemoryPluginCatalog:
     catalog = MemoryPluginCatalog(_builtin_plugins())
+    for entry_point in _entry_points("heams.memory_wrappers"):
+        wrapper = entry_point.load()
+        if not isinstance(wrapper, MemoryWrapperPlugin):
+            raise TypeError(
+                f"Memory wrapper entry point {entry_point.name!r} must load a "
+                "MemoryWrapperPlugin."
+            )
+        catalog.register_wrapper(
+            MemoryWrapperPlugin(
+                config_key=wrapper.config_key,
+                config_model=wrapper.config_model,
+                wrap=wrapper.wrap,
+                api_version=wrapper.api_version,
+                provider=entry_point.value,
+            )
+        )
     for entry_point in _memory_entry_points():
         plugin = entry_point.load()
         if not isinstance(plugin, MemoryPlugin):
