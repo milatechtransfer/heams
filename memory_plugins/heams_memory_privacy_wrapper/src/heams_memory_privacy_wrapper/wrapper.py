@@ -208,8 +208,10 @@ class PrivacyMemoryWrapper(BaseMemorySystem):
             decision = self._policy_engine.evaluate_recall_content(
                 content, metadata, query=query
             )
+            # `privacy_recall`, not `recall`: `inner.recall` above already
+            # logged the recall call, so these are per-candidate audits.
             self._log_memory_event(
-                operation_type="recall",
+                operation_type="privacy_recall",
                 status="success"
                 if decision.action is RecallAction.EXPOSE
                 else "skipped",
@@ -253,11 +255,14 @@ class PrivacyMemoryWrapper(BaseMemorySystem):
             entries
         )
         for entry, decision in zip(entries, batch_result.decisions, strict=True):
+            stored = decision.action is RetentionAction.STORE
+            # A stored entry goes on to `inner`, which logs its own `retain`
+            # event, so the decision is a `privacy_retain` audit; logging it as
+            # `retain` counted every stored entry twice. A dropped entry never
+            # reaches `inner`, so this event is its only `retain` record.
             self._log_memory_event(
-                operation_type="retain",
-                status="success"
-                if decision.action is RetentionAction.STORE
-                else "dropped",
+                operation_type="privacy_retain" if stored else "retain",
+                status="success" if stored else "dropped",
                 source="runtime",
                 component="privacy_retention",
                 payload={

@@ -10,6 +10,13 @@ class MemoryOperationType(str, Enum):
     DELETE = "delete"
     CONSOLIDATE = "consolidate"
     SET_RETENTION_POLICY = "set_retention_policy"
+    #: A governance layer's audit of a retain decision whose outcome is logged
+    #: by the wrapped backend's own `retain` event. Kept separate so a stored
+    #: entry isn't counted as two retains.
+    PRIVACY_RETAIN = "privacy_retain"
+    #: A governance layer's per-candidate recall decision; the wrapped backend
+    #: logs the recall call itself.
+    PRIVACY_RECALL = "privacy_recall"
 
 
 class MemoryOperationStatus(str, Enum):

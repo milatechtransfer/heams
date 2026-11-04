@@ -188,7 +188,7 @@ def test_memory_event_content_prefers_display_keys(
     ("status", "operation_type", "expected"),
     [
         (MemoryOperationStatus.SUCCESS, MemoryOperationType.RETAIN, "ok"),
-        (MemoryOperationStatus.DROPPED, MemoryOperationType.RETAIN, "skipped"),
+        (MemoryOperationStatus.DROPPED, MemoryOperationType.RETAIN, "dropped"),
         (
             MemoryOperationStatus.SKIPPED,
             MemoryOperationType.SET_RETENTION_POLICY,

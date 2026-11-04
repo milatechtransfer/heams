@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field
 from heams.memory_systems.schemas import MemoryOperationEvent
 
 TracePhase = Literal["priming", "execution", "finalization"]
-TraceStatus = Literal["unset", "ok", "error", "skipped"]
+TraceStatus = Literal["unset", "ok", "error", "skipped", "dropped"]
 
 
 class TraceEventKind(StrEnum):
@@ -549,9 +549,8 @@ def _memory_status(event: MemoryOperationEvent) -> TraceStatus:
     if event.status.value == "success":
         return "ok"
     if event.status.value == "dropped":
-        # The operation was declined, not performed; the memory ledger keeps the
-        # exact `dropped` status.
-        return "skipped"
+        # Declined by a governance policy: kept distinct from a no-op `skipped`.
+        return "dropped"
     return event.status.value  # type: ignore[return-value]
 
 

@@ -187,7 +187,8 @@ class PrivacyConfig(BaseMemoryWrapperConfig):
         # hybrid/llm retention that would be wasted here.
         if not isinstance(build_recall_policy(probe), NoOpRecallPolicy):
             raise ValueError(
-                "retention_policy requires privacy_config.recall.enabled: false. "
+                "The retention_policy benchmark requires "
+                "privacy_config.recall.enabled: false. "
                 "With a recall policy active, a fact that isn't recalled is "
                 "ambiguous between 'retention blocked it at ingest' and 'a recall "
                 "policy withheld it separately' -- exactly the ambiguity this "
