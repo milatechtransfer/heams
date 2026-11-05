@@ -26,5 +26,5 @@ backend_config:
   # Use agent to preserve MemGPT-managed ingestion.
   prime_mode: insert
   passage_max_tokens: 1024
-  # Postgres with pgvector and Letta 0.16.8's schema; see the plugin README.
+  # Optional: an existing Postgres. Unset, the plugin starts a private database.
   pg_uri_env: LETTA_PG_URI

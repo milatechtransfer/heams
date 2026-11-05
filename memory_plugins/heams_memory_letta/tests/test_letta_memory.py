@@ -402,11 +402,30 @@ def test_concurrent_operations_each_run_under_their_own_rule(
         assert rules_now == expected, content
 
 
-def test_missing_database_uri_is_a_clear_error(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_an_unset_database_uri_starts_a_private_database(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class Started(Exception):
+        pass
+
+    def start() -> str:
+        raise Started
+
     monkeypatch.setattr(letta_plugin, "_client", None)
-    monkeypatch.delenv("LETTA_TEST_PG_URI", raising=False)
-    with pytest.raises(RuntimeError, match="LETTA_TEST_PG_URI"):
+    monkeypatch.setattr(letta_plugin, "local_database_uri", start)
+    monkeypatch.setenv("LETTA_TEST_PG_URI", "")
+    with pytest.raises(Started):
         letta_plugin._letta_client("LETTA_TEST_PG_URI")
+
+
+def test_an_unset_database_uri_reuses_the_running_client(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    running = object()
+    monkeypatch.setattr(letta_plugin, "_client", running)
+    monkeypatch.setattr(letta_plugin, "_client_uri", "postgresql://localhost/private")
+    monkeypatch.delenv("LETTA_TEST_PG_URI", raising=False)
+    assert letta_plugin._letta_client("LETTA_TEST_PG_URI") is running
 
 
 # ---- priming ---------------------------------------------------------------------------

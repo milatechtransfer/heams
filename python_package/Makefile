@@ -51,7 +51,7 @@ run-smoke-benchmark: ## Run a smoke test for every benchmark except Retention po
 	$(MAKE) run CONFIG=smoke_test_benchmark OUTPUT_DIR="$(SMOKE_BENCHMARK_OUTPUT_DIR)"
 	uv run --python $(PYTHON_VERSION) heams generate-report --results-dir "$(SMOKE_BENCHMARK_OUTPUT_DIR)"
 
-run-smoke-memory-system: ## Run every memory system except Letta (needs Postgres) on one LoCoMo scenario and generate reports.
+run-smoke-memory-system: ## Run every memory system except Letta on one LoCoMo scenario and generate reports.
 	$(MAKE) run CONFIG=smoke_test_memory_system OUTPUT_DIR="$(SMOKE_MEMORY_SYSTEM_OUTPUT_DIR)"
 	uv run --python $(PYTHON_VERSION) heams generate-report --results-dir "$(SMOKE_MEMORY_SYSTEM_OUTPUT_DIR)"
 

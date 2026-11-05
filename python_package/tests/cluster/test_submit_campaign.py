@@ -127,7 +127,9 @@ def test_submit_campaign_requires_output_directory(tmp_path: Path) -> None:
     assert "Usage:" in result.stderr
 
 
-def test_submit_campaign_runs_mapb_through_run_wrapper(tmp_path: Path) -> None:
+def test_submit_campaign_runs_letta_like_any_other_memory_system(
+    tmp_path: Path,
+) -> None:
     result, submitted_jobs = _run_campaign_with_fake_sbatch(
         tmp_path, "cluster/campaigns/heams_performance_exps_letta.sh"
     )
@@ -135,7 +137,7 @@ def test_submit_campaign_runs_mapb_through_run_wrapper(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stderr
     [shell_command] = [_shell_command(job) for job in submitted_jobs]
     assert (
-        "exec srun bash cluster/letta/run_with_postgres.sh "
+        "exec srun uv run --python 3.12 heams run "
         "--config configs/runs/heams_performance_exps/letta_beam_1m.yaml --output-dir "
     ) in shell_command
 

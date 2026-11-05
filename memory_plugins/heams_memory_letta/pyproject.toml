@@ -17,6 +17,9 @@ dependencies = [
     "pg8000>=1.30.3",
     "pgvector>=0.2.3",
     "psycopg2-binary>=2.9.10",
+    # PostgreSQL 17 and pgvector binaries for the private database the plugin starts
+    # when no LETTA_PG_URI is set.
+    "pgembed>=0.2.0,<0.3",
 ]
 
 [project.entry-points."heams.memory_systems"]
@@ -63,5 +66,5 @@ env_files = [
     "../../.env",
 ]
 markers = [
-    "integration: marks tests that require Postgres and a live model provider",
+    "integration: marks tests that start Postgres or call a live model provider",
 ]
