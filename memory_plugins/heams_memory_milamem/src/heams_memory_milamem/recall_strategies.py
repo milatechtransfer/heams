@@ -19,6 +19,7 @@ import numpy as np
 from heams.memory_systems.api import MemoryEntry
 from pydantic import BaseModel, Field, model_validator
 
+from . import model_calls
 from .retrieval import bm25_top_k, tokenize_text
 from .temporal import parse_temporal_timestamp
 
@@ -280,6 +281,13 @@ def _embed_with_sentence_transformers(name: str, texts: list[str]) -> list[list[
                 model.max_seq_length or _ST_MAX_SEQ_LENGTH, _ST_MAX_SEQ_LENGTH
             )
             _st_models[name] = model
+        if model_calls.is_counting():
+            # The tokens actually embedded: truncated, without padding.
+            tokenized = model.tokenize(texts)
+            model_calls.count_local_embedding(
+                f"{_SENTENCE_TRANSFORMERS_PREFIX}{name}",
+                int(tokenized["attention_mask"].sum()),
+            )
         vectors = model.encode(
             texts,
             batch_size=_ST_ENCODE_BATCH_SIZE,
@@ -303,8 +311,6 @@ def embed_texts(model: str, texts: list[str]) -> list[list[float]]:
             model.removeprefix(_SENTENCE_TRANSFORMERS_PREFIX), texts
         )
 
-    import any_llm
-
     # `recall`/`retain` run synchronously but get invoked as agent tools from
     # inside a running event loop (TinyAgent's async tool-call loop); without
     # `allow_running_loop=True`, any_llm's sync API refuses to run there at
@@ -312,7 +318,7 @@ def embed_texts(model: str, texts: list[str]) -> list[list[float]]:
     _ensure_thread_event_loop()
     vectors: list[list[float]] = []
     for batch in _embed_batches(texts):
-        response = any_llm.embedding(model=model, inputs=batch, allow_running_loop=True)
+        response = model_calls.embedding(model=model, inputs=batch, allow_running_loop=True)
         vectors.extend(item.embedding for item in response.data)
     return vectors
 

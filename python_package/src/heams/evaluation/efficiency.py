@@ -15,6 +15,8 @@ from heams.memory_systems.schemas import (
     MemoryOperationEvent,
     MemoryOperationStatus,
     MemoryOperationType,
+    ModelCallKind,
+    ModelUsage,
 )
 
 
@@ -65,6 +67,10 @@ _MODEL_USD_PER_TOKEN: dict[str, tuple[float, float]] = {
     "gpt-4o": (2.5e-6, 1e-5),
     "gpt-4o-mini": (1.5e-7, 6e-7),
     "gpt-5.6-luna": (2e-7, 1.2e-6),
+    # Embeddings bill input tokens only.
+    "text-embedding-3-small": (2e-8, 0.0),
+    "text-embedding-3-large": (1.3e-7, 0.0),
+    "text-embedding-ada-002": (1e-7, 0.0),
 }
 
 
@@ -241,6 +247,78 @@ def _summarize_agent_traces(
     return summary
 
 
+def _memory_record_cost(record: ModelUsage) -> tuple[float, float]:
+    """(input, output) cost of a usage record.
+
+    The memory system's own cost wins and is booked as input cost; local
+    models are free; anything else is priced from the model id, and a model
+    missing from the price table costs 0.
+    """
+    if record.cost is not None:
+        return record.cost, 0.0
+    if record.local:
+        return 0.0, 0.0
+    price = _model_token_price(record.model)
+    if price is None:
+        return 0.0, 0.0
+    return record.input_tokens * price[0], record.output_tokens * price[1]
+
+
+def _summarize_memory_usage(
+    memory_ledger: list[MemoryOperationEvent] | None,
+) -> dict[str, Any]:
+    """Total the model usage memory systems reported on their ledger events.
+
+    Events without usage are counted as unreported and left out of the totals;
+    with no reported event at all, the totals are `None` rather than zero.
+    """
+    reported = [event for event in memory_ledger or [] if event.usage is not None]
+    summary: dict[str, Any] = {
+        "memory_usage_reported_operation_count": len(reported),
+        "memory_usage_unreported_operation_count": len(memory_ledger or [])
+        - len(reported),
+    }
+    if not reported:
+        return summary
+
+    totals = {
+        "memory_llm_call_count": 0,
+        "memory_llm_input_tokens": 0,
+        "memory_llm_output_tokens": 0,
+        "memory_embedding_call_count": 0,
+        "memory_embedding_input_tokens": 0,
+        "memory_local_tokens": 0,
+        "memory_input_cost": 0.0,
+        "memory_output_cost": 0.0,
+    }
+    for event in reported:
+        for record in event.usage or []:
+            if record.kind is ModelCallKind.LLM:
+                totals["memory_llm_call_count"] += record.call_count
+                totals["memory_llm_input_tokens"] += record.input_tokens
+                totals["memory_llm_output_tokens"] += record.output_tokens
+            else:
+                totals["memory_embedding_call_count"] += record.call_count
+                totals["memory_embedding_input_tokens"] += record.input_tokens
+            if record.local:
+                totals["memory_local_tokens"] += (
+                    record.input_tokens + record.output_tokens
+                )
+            input_cost, output_cost = _memory_record_cost(record)
+            totals["memory_input_cost"] += input_cost
+            totals["memory_output_cost"] += output_cost
+    totals["memory_total_tokens"] = (
+        totals["memory_llm_input_tokens"]
+        + totals["memory_llm_output_tokens"]
+        + totals["memory_embedding_input_tokens"]
+    )
+    totals["memory_total_cost"] = (
+        totals["memory_input_cost"] + totals["memory_output_cost"]
+    )
+    summary.update(totals)
+    return summary
+
+
 def compute_system_metrics(
     transcript: list,
     audit_data: dict,
@@ -262,6 +340,7 @@ def compute_system_metrics(
     stimulus_count = len(transcript) if stimulus_count is None else stimulus_count
     agent_turn_count = len(transcript)
     trace_summary = _summarize_agent_traces(agent_responses)
+    memory_usage = _summarize_memory_usage(memory_ledger)
 
     # Extract memory operation counts from ledger
     memory_operation_count = 0
@@ -351,6 +430,11 @@ def compute_system_metrics(
         llm_input_cost=float(trace_summary["llm_input_cost"]),
         llm_output_cost=float(trace_summary["llm_output_cost"]),
         llm_total_cost=float(trace_summary["llm_total_cost"]),
+        **memory_usage,
+        total_tokens=int(trace_summary["llm_total_tokens"])
+        + int(memory_usage.get("memory_total_tokens") or 0),
+        total_cost=float(trace_summary["llm_total_cost"])
+        + float(memory_usage.get("memory_total_cost") or 0.0),
         agent_duration_ms=float(trace_summary["agent_duration_ms"]),
         llm_duration_ms=float(trace_summary["llm_duration_ms"]),
         tool_execution_count=int(trace_summary["tool_execution_count"]),

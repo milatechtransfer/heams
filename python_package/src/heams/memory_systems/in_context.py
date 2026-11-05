@@ -11,6 +11,7 @@ from .base import (
     MemoryEventTarget,
     MemoryOperationResult,
 )
+from .schemas import ModelUsage
 from .shared_types import MemoryEntry, render_tool_memory_entry
 
 
@@ -51,6 +52,10 @@ class InContextMemorySystem(BaseMemorySystem):
             run_context=run_context,
         )
         self._entries = []
+
+    def model_usage(self) -> list[ModelUsage]:
+        """Makes no LLM or embedding calls, so its usage is always zero."""
+        return []
 
     def prime_memory_entries(self, entries: list[MemoryEntry]) -> None:
         self._entries.extend(entries)

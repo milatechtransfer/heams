@@ -59,12 +59,17 @@ def render_mean_metric_rows(
     for metric_name, getter, precision in metric_specs:
         values: list[str] = []
         for memory_label_str in memory_labels:
-            mean_value = mean_metric_value(
-                [
-                    getter(summary)
-                    for summary in summaries_by_memory.get(memory_label_str, [])
-                ]
-            )
+            raw_values = [
+                getter(summary)
+                for summary in summaries_by_memory.get(memory_label_str, [])
+            ]
+            mean_value = mean_metric_value(raw_values)
+            # A label such as "not reported" shared by every sample has no
+            # mean; show it rather than "na".
+            labels = {value for value in raw_values if isinstance(value, str)}
+            if mean_value is None and len(labels) == 1:
+                values.append(labels.pop())
+                continue
             values.append(format_metric_cell(mean_value, precision=precision))
         rows.append((metric_name, values))
     return rows

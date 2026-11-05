@@ -13,6 +13,7 @@ from heams.memory_systems.api import (
     MemoryEntry,
     MemoryPlugin,
     MemoryRuntimeContext,
+    ModelUsage,
     render_tool_memory_entry,
 )
 
@@ -40,6 +41,10 @@ class ExampleMemorySystem(BaseMemorySystem):
             run_context=run_context,
         )
         self._entries: list[MemoryEntry] = []
+
+    def model_usage(self) -> list[ModelUsage]:
+        """Makes no LLM or embedding calls, so its usage is always zero."""
+        return []
 
     def _retain_impl(
         self,

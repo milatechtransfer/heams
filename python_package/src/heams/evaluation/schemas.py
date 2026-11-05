@@ -250,37 +250,117 @@ class SystemMetricsSummary(BaseModel):
     llm_call_count: int = Field(
         default=0,
         ge=0,
-        description="Total LLM invocations recorded in the agent trace for the run.",
+        description="Total LLM invocations recorded in the task agent's trace for the run.",
     )
     llm_input_tokens: int = Field(
         default=0,
         ge=0,
-        description="Total input tokens recorded across all LLM calls in the run.",
+        description="Total input tokens across the task agent's LLM calls in the run.",
     )
     llm_output_tokens: int = Field(
         default=0,
         ge=0,
-        description="Total output tokens recorded across all LLM calls in the run.",
+        description="Total output tokens across the task agent's LLM calls in the run.",
     )
     llm_total_tokens: int = Field(
         default=0,
         ge=0,
-        description="Total input plus output tokens recorded across all LLM calls in the run.",
+        description="Total input plus output tokens across the task agent's LLM calls in the run.",
     )
     llm_input_cost: float = Field(
         default=0.0,
         ge=0.0,
-        description="Total input-side model cost recorded across all LLM calls in the run.",
+        description="Total input-side model cost of the task agent's LLM calls in the run.",
     )
     llm_output_cost: float = Field(
         default=0.0,
         ge=0.0,
-        description="Total output-side model cost recorded across all LLM calls in the run.",
+        description="Total output-side model cost of the task agent's LLM calls in the run.",
     )
     llm_total_cost: float = Field(
         default=0.0,
         ge=0.0,
-        description="Total model cost recorded across all LLM calls in the run.",
+        description="Total model cost of the task agent's LLM calls in the run.",
+    )
+    memory_usage_reported_operation_count: int = Field(
+        default=0,
+        ge=0,
+        description="Memory operations whose memory system reported its model usage (possibly zero).",
+    )
+    memory_usage_unreported_operation_count: int = Field(
+        default=0,
+        ge=0,
+        description="Memory operations whose memory system did not report model usage. Memory usage totals leave these out.",
+    )
+    memory_llm_call_count: int | None = Field(
+        default=None,
+        ge=0,
+        exclude_if=lambda value: value is None,
+        description="LLM calls memory systems made during their operations. `None` when no memory operation reported usage.",
+    )
+    memory_llm_input_tokens: int | None = Field(
+        default=None,
+        ge=0,
+        exclude_if=lambda value: value is None,
+        description="Input tokens of memory-system LLM calls. `None` when no memory operation reported usage.",
+    )
+    memory_llm_output_tokens: int | None = Field(
+        default=None,
+        ge=0,
+        exclude_if=lambda value: value is None,
+        description="Output tokens of memory-system LLM calls. `None` when no memory operation reported usage.",
+    )
+    memory_embedding_call_count: int | None = Field(
+        default=None,
+        ge=0,
+        exclude_if=lambda value: value is None,
+        description="Embedding requests memory systems made during their operations. `None` when no memory operation reported usage.",
+    )
+    memory_embedding_input_tokens: int | None = Field(
+        default=None,
+        ge=0,
+        exclude_if=lambda value: value is None,
+        description="Input tokens of memory-system embedding requests. `None` when no memory operation reported usage.",
+    )
+    memory_total_tokens: int | None = Field(
+        default=None,
+        ge=0,
+        exclude_if=lambda value: value is None,
+        description="All memory-system LLM and embedding tokens. `None` when no memory operation reported usage.",
+    )
+    memory_local_tokens: int | None = Field(
+        default=None,
+        ge=0,
+        exclude_if=lambda value: value is None,
+        description="Memory-system tokens processed by local models, which are priced at $0. `None` when no memory operation reported usage.",
+    )
+    memory_input_cost: float | None = Field(
+        default=None,
+        ge=0.0,
+        exclude_if=lambda value: value is None,
+        description="Input-side cost of memory-system model calls: the system's own cost when it reports one, else list prices; local and unpriced models count 0. `None` when no memory operation reported usage.",
+    )
+    memory_output_cost: float | None = Field(
+        default=None,
+        ge=0.0,
+        exclude_if=lambda value: value is None,
+        description="Output-side cost of memory-system model calls, from list prices; local and unpriced models count 0. `None` when no memory operation reported usage.",
+    )
+    memory_total_cost: float | None = Field(
+        default=None,
+        ge=0.0,
+        exclude_if=lambda value: value is None,
+        description="Total cost of memory-system model calls; local and unpriced models count 0. `None` when no memory operation reported usage.",
+    )
+    total_tokens: int = Field(
+        default=0,
+        ge=0,
+        description="Task-agent tokens plus reported memory-system tokens.",
+    )
+    total_cost: float = Field(
+        default=0.0,
+        ge=0.0,
+        description="Task-agent cost plus reported memory-system cost.",
     )
     agent_duration_ms: float = Field(
         default=0.0,

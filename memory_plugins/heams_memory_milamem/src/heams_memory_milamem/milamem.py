@@ -12,10 +12,13 @@ from heams.memory_systems.api import (
     MemoryEntry,
     MemoryEventTarget,
     MemoryOperationResult,
+    ModelUsage,
+    UsageCounter,
     render_tool_memory_entry,
 )
 from pydantic import BaseModel, Field, model_validator
 
+from . import model_calls
 from .consolidation import ConsolidationConfig
 from .dedup_strategies import (
     DedupStrategyConfig,
@@ -196,6 +199,8 @@ class MilaMemMemorySystem(BaseMemorySystem):
             event_sink=event_sink,
             run_context=run_context,
         )
+        # Model calls made while an operation runs; see `model_calls.py`.
+        self._usage = UsageCounter()
         delete_retrieval_config = (
             self.config.delete_strategy.top_k_llm.retrieval_strategy
         )
@@ -403,6 +408,14 @@ class MilaMemMemorySystem(BaseMemorySystem):
         if pending_count >= config.pending_threshold:
             self.consolidate()
 
+    def model_usage(self) -> list[ModelUsage]:
+        """Every any_llm call and local `st:` embedding, counted in `model_calls.py`.
+
+        The rerank strategy's in-process cross-encoder is not counted.
+        """
+        return self._usage.totals()
+
+    @model_calls.counted
     def _retain_impl(
         self,
         content: str,
@@ -435,6 +448,7 @@ class MilaMemMemorySystem(BaseMemorySystem):
             result=result,
         )
 
+    @model_calls.counted
     def _recall_impl(
         self,
         query: str = "",
@@ -483,6 +497,7 @@ class MilaMemMemorySystem(BaseMemorySystem):
             result=event_result,
         )
 
+    @model_calls.counted
     def _delete_impl(self, query: str) -> MemoryOperationResult:
         stripped_query = query.strip()
         strategy = self.config.delete_strategy.selection_mode.value
@@ -591,6 +606,7 @@ class MilaMemMemorySystem(BaseMemorySystem):
             },
         )
 
+    @model_calls.counted
     def _consolidate_impl(
         self,
         context: str | None = None,

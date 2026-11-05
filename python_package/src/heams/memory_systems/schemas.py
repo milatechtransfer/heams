@@ -63,3 +63,46 @@ class MemoryOperationEvent(BaseModel):
         exclude_if=lambda value: value is None,
         description="Optional error summary when the operation fails.",
     )
+    usage: list["ModelUsage"] | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+        description=(
+            "LLM and embedding usage the memory system reported since its "
+            "previous event, one record per (kind, model, local). `None` means "
+            "the system does not report usage; an empty list means no model calls."
+        ),
+    )
+
+
+class ModelCallKind(str, Enum):
+    LLM = "llm"
+    EMBEDDING = "embedding"
+
+
+class ModelUsage(BaseModel):
+    """Token usage of one kind of model call made by a memory system."""
+
+    kind: ModelCallKind
+    model: str | None = Field(
+        default=None,
+        description="Model id as the memory system called it, e.g. 'openai:gpt-4o-mini'.",
+    )
+    local: bool = Field(
+        default=False,
+        description="The model ran on the user's own hardware; it is priced at $0.",
+    )
+    call_count: int = Field(default=1, ge=0)
+    input_tokens: int = Field(default=0, ge=0)
+    output_tokens: int = Field(default=0, ge=0)
+    cost: float | None = Field(
+        default=None,
+        ge=0.0,
+        exclude_if=lambda value: value is None,
+        description=(
+            "Cost in USD when the memory system knows it; otherwise it is "
+            "priced from the model id."
+        ),
+    )
+
+
+MemoryOperationEvent.model_rebuild()

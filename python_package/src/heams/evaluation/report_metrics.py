@@ -22,6 +22,24 @@ _EXPERIMENT_TRACE_METRIC_NAMES = frozenset(
     }
 )
 
+NOT_REPORTED = "not reported"
+
+
+def _memory_usage(attribute: str) -> Callable[[Any], object]:
+    """Memory usage, or "not reported" when no operation reported any.
+
+    Operations that ran without reporting must not read as zero usage; a run
+    with no memory operations at all has nothing to report and stays empty.
+    """
+
+    def getter(summary: Any) -> object:
+        value = getattr(summary, attribute)
+        if value is None and summary.memory_usage_unreported_operation_count:
+            return NOT_REPORTED
+        return value
+
+    return getter
+
 
 EXPERIMENT_SYSTEM_REPORT_METRICS: list[MetricSpec] = [
     (
@@ -93,6 +111,40 @@ EXPERIMENT_SYSTEM_REPORT_METRICS: list[MetricSpec] = [
     (
         "LLM total cost",
         lambda summary: summary.llm_total_cost,
+        6,
+    ),
+    (
+        "Memory ops reporting usage",
+        lambda summary: summary.memory_usage_reported_operation_count,
+        None,
+    ),
+    (
+        "Memory ops not reporting usage",
+        lambda summary: summary.memory_usage_unreported_operation_count,
+        None,
+    ),
+    ("Memory LLM calls", _memory_usage("memory_llm_call_count"), None),
+    ("Memory LLM input tokens", _memory_usage("memory_llm_input_tokens"), None),
+    ("Memory LLM output tokens", _memory_usage("memory_llm_output_tokens"), None),
+    ("Memory embedding calls", _memory_usage("memory_embedding_call_count"), None),
+    (
+        "Memory embedding tokens",
+        _memory_usage("memory_embedding_input_tokens"),
+        None,
+    ),
+    ("Memory local tokens", _memory_usage("memory_local_tokens"), None),
+    ("Memory total tokens", _memory_usage("memory_total_tokens"), None),
+    ("Memory input cost", _memory_usage("memory_input_cost"), 6),
+    ("Memory output cost", _memory_usage("memory_output_cost"), 6),
+    ("Memory total cost", _memory_usage("memory_total_cost"), 6),
+    (
+        "Total tokens (agent + memory)",
+        lambda summary: summary.total_tokens,
+        None,
+    ),
+    (
+        "Total cost (agent + memory)",
+        lambda summary: summary.total_cost,
         6,
     ),
     (
@@ -305,6 +357,7 @@ COMPONENT_PERFORMANCE_REPORT_METRICS: list[MetricSpec] = [
 
 __all__ = [
     "MetricSpec",
+    "NOT_REPORTED",
     "EXPERIMENT_SYSTEM_REPORT_METRICS",
     "SYSTEM_REPORT_METRICS",
     "COMPONENT_REPORT_METRICS",

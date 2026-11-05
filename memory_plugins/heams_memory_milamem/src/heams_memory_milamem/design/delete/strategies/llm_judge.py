@@ -7,6 +7,7 @@ from typing import Any, cast
 
 from any_llm.types.completion import ChatCompletionMessage, ParsedChatCompletion
 
+from .... import model_calls
 from ....recall_strategies import _ensure_thread_event_loop
 from ..config import DeleteStrategyConfig
 from ..models import DeleteQueryPlan
@@ -23,8 +24,6 @@ def request_delete_decision(
 ) -> DeleteDecision:
     """Request one structured decision; isolated as the test's LLM seam."""
 
-    import any_llm
-
     # `select()` runs from the same run_in_executor worker thread as
     # recall()/retain(); without a persistent loop on that thread, any_llm's
     # `allow_running_loop=True` sync path falls back to `asyncio.run(coro)`,
@@ -32,7 +31,7 @@ def request_delete_decision(
     _ensure_thread_event_loop()
     response = cast(
         ParsedChatCompletion[DeleteDecision],
-        any_llm.completion(
+        model_calls.completion(
             model=model,
             messages=messages,
             response_format=DeleteDecision,
