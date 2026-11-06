@@ -112,7 +112,7 @@ class SemanticDedupStrategy(BaseDedupStrategy):
         keys = [self._entry_key_fn(entry) for entry in entries]
 
         for key, entry in zip(keys, entries):
-            if key not in self.embedding_cache:
+            if key not in self.embedding_cache and key not in missing_keys:
                 missing_keys.append(key)
                 missing_texts.append(entry.content)
 
@@ -132,9 +132,11 @@ class SemanticDedupStrategy(BaseDedupStrategy):
         if not entries or top_k <= 0:
             return []
 
-        entry_vectors = self._resolve_entry_vectors(entries)
-        content_vector = np.array(
-            recall_strategies.embed_texts(self.embed_model, [content])[0]
+        # The incoming content goes through the cache too: once retained, it
+        # is a stored entry with this same key, so the next retain reuses its
+        # vector instead of embedding the same text again.
+        *entry_vectors, content_vector = self._resolve_entry_vectors(
+            [*entries, MemoryEntry(content=content)]
         )
         scores = [
             recall_strategies.cosine_similarity(content_vector, vector)
