@@ -137,9 +137,21 @@ def test_generate_submetric_csv_writes_tag_and_efficiency_rows(tmp_path: Path) -
         "metric_name": "Run duration (ms)",
         "metric_value": "1234.50",
     } in rows
-    assert {**shared, "metric_name": "Agent LLM total tokens", "metric_value": "42"} in rows
-    assert {**shared, "metric_name": "Agent LLM input tokens", "metric_value": "30"} in rows
-    assert {**shared, "metric_name": "Agent LLM output tokens", "metric_value": "12"} in rows
+    assert {
+        **shared,
+        "metric_name": "Agent LLM total tokens",
+        "metric_value": "42",
+    } in rows
+    assert {
+        **shared,
+        "metric_name": "Agent LLM input tokens",
+        "metric_value": "30",
+    } in rows
+    assert {
+        **shared,
+        "metric_name": "Agent LLM output tokens",
+        "metric_value": "12",
+    } in rows
     assert {
         **shared,
         "metric_name": "Agent LLM input cost",
