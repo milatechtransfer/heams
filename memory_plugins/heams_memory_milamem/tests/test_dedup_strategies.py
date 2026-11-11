@@ -73,33 +73,75 @@ def test_semantic_kind_is_enabled_by_default() -> None:
     assert config.enabled is True
 
 
-def test_semantic_dedup_strategy_reuses_cached_embeddings(
+def _recording_embed_texts(
     monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    call_count = {"n": 0}
+) -> list[list[str]]:
+    """Replace `embed_texts` with one that records each request's texts."""
+    requests: list[list[str]] = []
 
-    def counting_embed_texts(model: str, texts: list[str]) -> list[list[float]]:
-        call_count["n"] += 1
+    def embed_texts(model: str, texts: list[str]) -> list[list[float]]:
+        requests.append(list(texts))
         return _fake_embed_texts(model, texts)
 
-    monkeypatch.setattr(recall_strategies_module, "embed_texts", counting_embed_texts)
+    monkeypatch.setattr(recall_strategies_module, "embed_texts", embed_texts)
+    return requests
 
-    cache = EmbeddingCache()
-    strategy = build_dedup_strategy(
+
+def _semantic_strategy(cache: EmbeddingCache):
+    return build_dedup_strategy(
         DedupStrategyConfig(kind=DedupStrategyKind.SEMANTIC),
         embedding_cache=cache,
         entry_key_fn=lambda entry: entry.content,
     )
+
+
+def test_semantic_dedup_strategy_reuses_cached_embeddings(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    requests = _recording_embed_texts(monkeypatch)
+    strategy = _semantic_strategy(EmbeddingCache())
     entries = [MemoryEntry(content="Employer is State University")]
 
     strategy.candidates(entries, "Employer is Mila", 1)
-    calls_after_first = call_count["n"]
     strategy.candidates(entries, "Employer is Anthropic", 1)
-    calls_after_second = call_count["n"]
 
-    # second call re-embeds only the new query content, not the unchanged entry
-    assert calls_after_second > calls_after_first
-    assert calls_after_second < calls_after_first * 2
+    # The unchanged entry is embedded once; each query once, in one request.
+    assert requests == [
+        ["Employer is State University", "Employer is Mila"],
+        ["Employer is Anthropic"],
+    ]
+
+
+def test_retained_content_is_embedded_once_across_retains(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Each retain checks its content against the stored entries, then stores
+    it; the next retain must reuse its vector, not embed the text again."""
+    requests = _recording_embed_texts(monkeypatch)
+    strategy = _semantic_strategy(EmbeddingCache())
+    stored: list[MemoryEntry] = [MemoryEntry(content="first fact")]
+
+    for content in ["second fact", "third fact", "fourth fact"]:
+        strategy.candidates(stored, content, 1)
+        stored.append(MemoryEntry(content=content))
+
+    embedded = [text for request in requests for text in request]
+    assert sorted(embedded) == sorted(
+        ["first fact", "second fact", "third fact", "fourth fact"]
+    )
+
+
+def test_repeated_texts_are_embedded_once_per_request(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    requests = _recording_embed_texts(monkeypatch)
+    strategy = _semantic_strategy(EmbeddingCache())
+    entries = [MemoryEntry(content="same"), MemoryEntry(content="same")]
+
+    candidates = strategy.candidates(entries, "same", 2)
+
+    assert requests == [["same"]]
+    assert [candidate.score for candidate in candidates] == pytest.approx([1.0, 1.0])
 
 
 def test_build_dedup_strategy_rejects_unknown_kind() -> None:
