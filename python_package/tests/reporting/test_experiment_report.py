@@ -251,11 +251,11 @@ def test_render_experiment_report_prints_trace_efficiency_rows() -> None:
 
     report = render_experiment_report("exp_a", [run])
 
-    assert "| LLM input tokens | 10.00 |" in report
-    assert "| LLM output tokens | 4.00 |" in report
-    assert "| LLM input cost | 0.000002 |" in report
-    assert "| LLM output cost | 0.000004 |" in report
-    assert "| LLM duration (ms) | 2.00 |" in report
+    assert "| Agent LLM input tokens | 10.00 |" in report
+    assert "| Agent LLM output tokens | 4.00 |" in report
+    assert "| Agent LLM input cost | 0.000002 |" in report
+    assert "| Agent LLM output cost | 0.000004 |" in report
+    assert "| Agent LLM duration (ms) | 2.00 |" in report
     assert "| Agent duration (ms) | 250.00 |" in report
     assert "| Tool executions | 2.00 |" in report
     assert "| Tool execution errors | 1.00 |" in report

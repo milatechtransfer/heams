@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from heams.evaluation.schemas import SystemMetricsSummary
 from heams.results_browser.catalog import ResultsCatalog
 from heams.results_browser.table import Pick, build_table, select_sources
 from tests.results_browser.fixtures import make_run, write_experiment
@@ -248,3 +249,68 @@ def test_rows_follow_declared_sections_sizes_and_labels(tmp_path: Path) -> None:
     assert table["dimensions"][:3] == ["Performance", "Privacy", "Efficiency"]
     assert table["benchmark_labels"]["beam:1M"] == "BEAM 1M"
     assert table["memory_labels"] == {"someone_elses_memory": "someone_elses_memory"}
+
+
+def _with_metrics(run, **metrics):
+    return run.model_copy(
+        update={
+            "system_metrics": SystemMetricsSummary(
+                run_duration_ms=1500.0, llm_total_tokens=42, **metrics
+            )
+        }
+    )
+
+
+def test_efficiency_shows_agent_and_memory_usage(tmp_path: Path) -> None:
+    write_experiment(
+        tmp_path / "run",
+        "exp",
+        benchmark="stale",
+        memory="milamem",
+        runs=[
+            _with_metrics(
+                make_run("s-1", passed=True, category="x"),
+                llm_total_cost=0.002,
+                memory_usage_reported_operation_count=2,
+                memory_total_tokens=100,
+                memory_total_cost=0.0001,
+            ),
+            _with_metrics(
+                make_run("s-2", passed=True, category="x"),
+                llm_total_cost=0.004,
+                memory_usage_reported_operation_count=2,
+                memory_total_tokens=300,
+                memory_total_cost=0.0003,
+            ),
+        ],
+    )
+
+    cells = _cells(build_table(ResultsCatalog(tmp_path), wait=True), "milamem")
+
+    assert cells[("Efficiency", "Agent LLM tokens")]["value"] == 42
+    assert cells[("Efficiency", "Agent LLM cost")]["value"] == pytest.approx(0.003)
+    assert cells[("Efficiency", "Memory tokens")]["value"] == 200
+    assert cells[("Efficiency", "Memory cost")]["value"] == pytest.approx(0.0002)
+
+
+def test_memory_usage_not_reported_is_labelled_not_zero(tmp_path: Path) -> None:
+    write_experiment(
+        tmp_path / "run",
+        "exp",
+        benchmark="stale",
+        memory="mem0",
+        runs=[
+            _with_metrics(
+                make_run("s-1", passed=True, category="x"),
+                memory_operation_count=3,
+                memory_usage_unreported_operation_count=3,
+            )
+        ],
+    )
+
+    cells = _cells(build_table(ResultsCatalog(tmp_path), wait=True), "mem0")
+
+    for criterion in ("Memory tokens", "Memory cost"):
+        cell = cells[("Efficiency", criterion)]
+        assert cell["value"] is None
+        assert cell["label"] == "not reported"

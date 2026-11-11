@@ -68,7 +68,7 @@ function valueCell(row, memory, source, memoryLabel) {
   const href = hashFor("exp", { id: cell.experiment, crit: row.criterion === "Overall" ? "" : row.criterion });
   return html`<td class="num cell ${cell.value === null ? "na" : ""}" data-heat="${heatLevel(cell.value, row.unit)}"
       title="${title}" data-href="${href}">
-    <a class="cell-link ${cell.best ? "best" : ""}" href="${href}">${formatValue(cell.value, row.unit)}</a>
+    <a class="cell-link ${cell.best ? "best" : ""}" href="${href}">${cell.label ?? formatValue(cell.value, row.unit)}</a>
     <span class="n">n=${cell.n}${excluded}${date}${
       selected && selected.status !== "complete" ? html` · <span class="warn">${selected.status}</span>` : ""
     }</span>

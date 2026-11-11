@@ -92,8 +92,11 @@ Cell values:
   judge or runtime failure) are left out of every value, not counted as 0,
   and reported as `excl.` on the `Overall` row. A run with no scored sample
   shows `N/A`.
-- Efficiency rows are per-sample means of duration, LLM tokens, memory
-  operations and memory-operation error rate.
+- Efficiency rows are per-sample means of duration, the task agent's LLM
+  tokens and cost, the memory system's model tokens and cost, memory
+  operations and memory-operation error rate. Memory tokens and cost are
+  averaged over the samples whose memory system reported usage. A system
+  that reported none shows `not reported`, not 0.
 - The best value in each row is underlined (lowest for time, tokens and
   error rates). Percentages are heat-shaded.
 

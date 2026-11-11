@@ -16,6 +16,7 @@ from enum import StrEnum
 from typing import Any
 
 from heams.benchmarks.info import ReportDimension, RunScope
+from heams.evaluation.report_metrics import NOT_REPORTED
 from heams.reporting.criteria import OVERALL, UNDECLARED_DIMENSION, dimension
 from heams.results_browser.catalog import (
     Experiment,
@@ -30,7 +31,10 @@ DIMENSIONS = (*(d.value for d in ReportDimension), UNDECLARED_DIMENSION)
 _EFFICIENCY = ReportDimension.EFFICIENCY.value
 _EFFICIENCY_ROWS = (
     ("Duration", "s"),
-    ("LLM tokens", "tokens"),
+    ("Agent LLM tokens", "tokens"),
+    ("Agent LLM cost", "USD"),
+    ("Memory tokens", "tokens"),
+    ("Memory cost", "USD"),
     ("Memory operations", "operations"),
     ("Memory operation error rate", "%"),
 )
@@ -133,12 +137,26 @@ def experiment_cells(
     cells[overall_key]["excluded"] = len(latest) - len(scored)
 
     efficiency: dict[tuple[str, str], list[float]] = defaultdict(list)
+    memory_unreported = 0
     for summary in latest:
         if not summary["has_metrics"]:
             continue
         if summary["duration_s"] is not None:
             efficiency[("Duration", "s")].append(summary["duration_s"])
-        efficiency[("LLM tokens", "tokens")].append(float(summary["tokens"] or 0))
+        efficiency[("Agent LLM tokens", "tokens")].append(float(summary["tokens"] or 0))
+        if summary.get("cost") is not None:
+            efficiency[("Agent LLM cost", "USD")].append(summary["cost"])
+        # Memory usage is averaged over the samples that reported it; a
+        # sample whose memory system did not report is left out, not
+        # counted as 0.
+        if summary.get("memory_tokens") is not None:
+            efficiency[("Memory tokens", "tokens")].append(
+                float(summary["memory_tokens"])
+            )
+        elif summary.get("memory_usage_unreported"):
+            memory_unreported += 1
+        if summary.get("memory_cost") is not None:
+            efficiency[("Memory cost", "USD")].append(summary["memory_cost"])
         operations = float(summary["memory_ops"] or 0)
         efficiency[("Memory operations", "operations")].append(operations)
         errors = float(summary["memory_errors"] or 0)
@@ -151,6 +169,15 @@ def experiment_cells(
             "n": len(values),
             "excluded": 0,
         }
+    if memory_unreported and ("Memory tokens", "tokens") not in efficiency:
+        for criterion in ("Memory tokens", "Memory cost"):
+            unit = "tokens" if criterion == "Memory tokens" else "USD"
+            cells[(_EFFICIENCY, criterion, unit)] = {
+                "value": None,
+                "n": 0,
+                "excluded": 0,
+                "label": NOT_REPORTED,
+            }
     return cells
 
 

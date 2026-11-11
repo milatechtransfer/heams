@@ -10,12 +10,12 @@ MetricSpec: TypeAlias = tuple[str, Callable[[Any], object], int | None]
 # rollups keep the pre-trace list so those tables stay unchanged.
 _EXPERIMENT_TRACE_METRIC_NAMES = frozenset(
     {
-        "LLM input tokens",
-        "LLM output tokens",
-        "LLM duration (ms)",
+        "Agent LLM input tokens",
+        "Agent LLM output tokens",
+        "Agent LLM duration (ms)",
         "Agent duration (ms)",
-        "LLM input cost",
-        "LLM output cost",
+        "Agent LLM input cost",
+        "Agent LLM output cost",
         "Tool executions",
         "Tool execution errors",
         "Tool duration (ms)",
@@ -69,27 +69,27 @@ EXPERIMENT_SYSTEM_REPORT_METRICS: list[MetricSpec] = [
         None,
     ),
     (
-        "LLM calls",
+        "Agent LLM calls",
         lambda summary: summary.llm_call_count,
         None,
     ),
     (
-        "LLM input tokens",
+        "Agent LLM input tokens",
         lambda summary: summary.llm_input_tokens,
         None,
     ),
     (
-        "LLM output tokens",
+        "Agent LLM output tokens",
         lambda summary: summary.llm_output_tokens,
         None,
     ),
     (
-        "LLM total tokens",
+        "Agent LLM total tokens",
         lambda summary: summary.llm_total_tokens,
         None,
     ),
     (
-        "LLM duration (ms)",
+        "Agent LLM duration (ms)",
         lambda summary: summary.llm_duration_ms,
         2,
     ),
@@ -99,17 +99,17 @@ EXPERIMENT_SYSTEM_REPORT_METRICS: list[MetricSpec] = [
         2,
     ),
     (
-        "LLM input cost",
+        "Agent LLM input cost",
         lambda summary: summary.llm_input_cost,
         6,
     ),
     (
-        "LLM output cost",
+        "Agent LLM output cost",
         lambda summary: summary.llm_output_cost,
         6,
     ),
     (
-        "LLM total cost",
+        "Agent LLM total cost",
         lambda summary: summary.llm_total_cost,
         6,
     ),
