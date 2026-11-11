@@ -9,6 +9,7 @@ from .base import (
     MemoryEventTarget,
     MemoryOperationResult,
 )
+from .schemas import ModelUsage
 from .shared_types import MemoryEntry
 
 
@@ -36,6 +37,10 @@ class NoMemoryMemorySystem(BaseMemorySystem):
             event_sink=event_sink,
             run_context=run_context,
         )
+
+    def model_usage(self) -> list[ModelUsage]:
+        """Makes no LLM or embedding calls, so its usage is always zero."""
+        return []
 
     def prime_memory_entries(self, entries: list[MemoryEntry]) -> None:
         """Priming is intentionally ignored to preserve a prompt-only baseline."""

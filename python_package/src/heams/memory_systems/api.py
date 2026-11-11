@@ -28,8 +28,11 @@ from .schemas import (
     MemoryOperationSource,
     MemoryOperationStatus,
     MemoryOperationType,
+    ModelCallKind,
+    ModelUsage,
 )
 from .shared_types import MemoryEntry, render_tool_memory_entry
+from .usage import UsageCounter
 
 __all__ = [
     "BaseConsolidationConfig",
@@ -51,5 +54,8 @@ __all__ = [
     "MemoryRuntimeContext",
     "MemoryWrapFunction",
     "MemoryWrapperPlugin",
+    "ModelCallKind",
+    "ModelUsage",
+    "UsageCounter",
     "render_tool_memory_entry",
 ]

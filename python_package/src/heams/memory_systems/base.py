@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import logging
+import threading
 import time
 from collections.abc import Callable, MutableSequence
 from abc import ABC, abstractmethod
@@ -11,6 +13,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Self
 from pydantic import BaseModel, ConfigDict, Field
 
+logger = logging.getLogger(__name__)
+
 if TYPE_CHECKING:
     from heams.memory_systems.shared_types import MemoryEntry
     from heams.memory_systems.schemas import (
@@ -18,6 +22,7 @@ if TYPE_CHECKING:
         MemoryOperationSource,
         MemoryOperationStatus,
         MemoryOperationType,
+        ModelUsage,
     )
 
 
@@ -124,6 +129,49 @@ class BaseMemorySystem(ABC):
                 default=None,
             )
         )
+        # Running totals already recorded on an event; see `model_usage`.
+        self._logged_model_usage: list[ModelUsage] = []
+        self._model_usage_lock = threading.RLock()
+
+    def model_usage(self) -> list[ModelUsage] | None:
+        """Running totals of the LLM and embedding calls this system has made.
+
+        Override to report usage: return one `ModelUsage` per (kind, model,
+        local), summed since the system was created, however you count it.
+        Return `[]` if the system makes no model calls. The default, `None`,
+        reports nothing, and reports show the system's usage as not reported.
+
+        The framework calls this whenever it logs an event for the system and
+        records the growth since the previous event on that event, so totals
+        must never shrink. `heams.memory_systems.api.UsageCounter` keeps them.
+        """
+
+        return None
+
+    def _model_usage_since_last_event(self) -> list[ModelUsage] | None:
+        from heams.memory_systems.usage import usage_difference
+
+        if not hasattr(self, "_model_usage_lock"):
+            # Subclasses that skip `BaseMemorySystem.__init__`.
+            self._logged_model_usage = []
+            self._model_usage_lock = threading.RLock()
+        # Read and advance together, so concurrent events split the growth
+        # between them and their sum still equals the system's totals.
+        with self._model_usage_lock:
+            try:
+                totals = self.model_usage()
+            except Exception:
+                logger.warning(
+                    "%s.model_usage() failed; usage not reported for this event.",
+                    type(self).__name__,
+                    exc_info=True,
+                )
+                return None
+            if totals is None:
+                return None
+            difference = usage_difference(self._logged_model_usage, totals)
+            self._logged_model_usage = [record.model_copy() for record in totals]
+            return difference
 
     def close(self) -> None:
         """Release resources owned by this memory system."""
@@ -194,6 +242,7 @@ class BaseMemorySystem(ABC):
                 payload=event_payload,
                 result=dict(result or {}),
                 error=error,
+                usage=self._model_usage_since_last_event(),
             )
 
         combined_run_context = self._current_run_context()

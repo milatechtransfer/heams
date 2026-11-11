@@ -13,7 +13,7 @@ import numpy as np
 from heams.memory_systems.api import BaseConsolidationConfig
 from pydantic import BaseModel, Field
 
-from . import recall_strategies
+from . import model_calls, recall_strategies
 from .design.storage_type import CanonicalMemoryRecord
 from .recall_strategies import EmbeddingCache
 
@@ -311,8 +311,6 @@ def judge_cluster(
     """The isolated LLM call — single mockable seam for tests, mirroring
     `embed_texts`'s isolation rationale (no real API calls in the test
     suite)."""
-    import any_llm
-
     listing = "\n".join(
         f"- id={record.id!r} sequence={record.sequence} content={record.content!r}"
         for record in records
@@ -334,7 +332,7 @@ def judge_cluster(
     # API refuses to run there at all and raises instead of completing —
     # same hazard as `embed_texts` in recall_strategies.py.
     recall_strategies._ensure_thread_event_loop()
-    response = any_llm.completion(
+    response = model_calls.completion(
         model=config.llm_model,
         messages=messages,
         response_format=ConsolidationVerdict,
@@ -350,8 +348,6 @@ def judge_anchor(
     candidates: list[CanonicalMemoryRecord],
 ) -> AnchorVerdict:
     """One verdict per earlier candidate, relative to the newer anchor."""
-    import any_llm
-
     listing = "\n".join(
         f"- id={record.id!r} content={record.content!r}" for record in candidates
     )
@@ -368,7 +364,7 @@ def judge_anchor(
         },
     ]
     recall_strategies._ensure_thread_event_loop()
-    response = any_llm.completion(
+    response = model_calls.completion(
         model=config.llm_model,
         messages=messages,
         response_format=AnchorVerdict,

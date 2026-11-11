@@ -1,6 +1,7 @@
 """Orchestration for the canonical consolidation lifecycle."""
 
 from concurrent.futures import ThreadPoolExecutor
+from contextvars import copy_context
 from dataclasses import dataclass
 from typing import Any, Protocol
 
@@ -116,14 +117,19 @@ class ConsolidationLifecycle:
 
         if anchor_groups:
             with ThreadPoolExecutor(max_workers=config.judge_concurrency) as pool:
-                anchor_verdicts = list(
-                    pool.map(
-                        lambda group: _judge_anchor_or_none(
-                            config, group[0], group[1]
-                        ),
-                        anchor_groups,
+                # Each judge runs in a copy of this context so its model calls
+                # are still counted for the consolidation (see `model_calls.py`).
+                futures = [
+                    pool.submit(
+                        copy_context().run,
+                        _judge_anchor_or_none,
+                        config,
+                        anchor,
+                        candidates,
                     )
-                )
+                    for anchor, candidates in anchor_groups
+                ]
+                anchor_verdicts = [future.result() for future in futures]
             # Applied in sequence order so older anchors resolve first.
             for (anchor, candidates), verdict in zip(anchor_groups, anchor_verdicts):
                 if verdict is None or any(

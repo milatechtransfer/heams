@@ -48,7 +48,7 @@ RUNS_JSONL_FILENAME = "runs.jsonl"
 SUBMETRIC_CSV_FILENAME = "submetrics.csv"
 CACHE_DIRNAME = "_results_browser_cache"
 #: Bump when the cached summary shape changes so stale caches are rebuilt.
-_INDEX_VERSION = 3
+_INDEX_VERSION = 4
 _SKIP_DIR_PREFIX = "_"
 _SKIP_DIR_NAMES = frozenset({"workspace", "__pycache__"})
 _RUN_ID = re.compile(r"experiment_config\.((\d{8})-(\d{6})[^.]*)\.yaml$")
@@ -309,6 +309,12 @@ def summarize_run(
         "cost": metrics.get("llm_total_cost"),
         "memory_ops": metrics.get("memory_operation_count"),
         "memory_errors": metrics.get("memory_operation_error_count"),
+        # None when the memory system reported no usage for this sample.
+        "memory_tokens": metrics.get("memory_total_tokens"),
+        "memory_cost": metrics.get("memory_total_cost"),
+        "memory_usage_unreported": metrics.get(
+            "memory_usage_unreported_operation_count"
+        ),
         "has_metrics": bool(metrics),
         "tags": dict(tags),
         "scores": sample_scores(benchmark, audit) if score_available else {},

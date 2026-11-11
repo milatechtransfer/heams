@@ -73,6 +73,12 @@ function ledgerPanel(ledger) {
   </table></div></details>`;
 }
 
+// Memory systems that ran without reporting usage must not read as zero tokens.
+function memoryTokens(metrics) {
+  if (metrics.memory_total_tokens != null) return formatCount(metrics.memory_total_tokens);
+  return metrics.memory_usage_unreported_operation_count ? "not reported" : "–";
+}
+
 function summaryCards(run) {
   const audit = run.audit ?? {};
   const passed = (audit.passed_keys ?? []).length;
@@ -86,7 +92,8 @@ function summaryCards(run) {
     ${card("Checks passed", `${passed} / ${checks}`)}
     ${metrics ? html`
       ${card("Duration", metrics.run_duration_ms ? `${(metrics.run_duration_ms / 1000).toFixed(1)} s` : "–")}
-      ${card("LLM tokens", formatCount(metrics.llm_total_tokens))}
+      ${card("Agent tokens", formatCount(metrics.llm_total_tokens))}
+      ${card("Memory tokens", memoryTokens(metrics))}
       ${card("Memory ops", metrics.memory_operation_count ?? 0)}` : ""}
   </div>`;
 }

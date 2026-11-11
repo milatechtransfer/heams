@@ -188,6 +188,57 @@ base class; you do not need to add it.
 | `self._memory_size_proxy(value)` | Measure a value consistently for `output_bytes` |
 | `self._emit_memory_operation(...)` | Log a retain event yourself when `prime_memory_entries` loads data without calling `retain()` (as the HippoRAG, mem0 and Letta plugins do) |
 
+### Reporting model usage
+
+Reports show the tokens and cost of memory systems next to the task agent's.
+To report yours, override one method:
+
+```python
+def model_usage(self) -> list[ModelUsage] | None:
+    return self._usage.totals()
+```
+
+It returns the running totals of every LLM and embedding call the system has
+made since it was created: one `ModelUsage` per (kind, model, local), with
+`call_count`, `input_tokens` and `output_tokens`. How you count is up to you.
+The framework reads the totals whenever it logs an event for your system and
+records what was added since the previous event on that event, so totals must
+only grow. Concurrent operations may split their calls between their events,
+but nothing is ever counted twice.
+
+| Return | Meaning in reports |
+|--------|--------------------|
+| `None` (the default) | Usage not reported; never shown as zero |
+| `[]` | The system makes no model calls |
+| Records | Tokens per model; cost from the shared price table |
+
+- Set `local=True` on calls to models running on your own hardware
+  (sentence-transformers, a local vLLM or Ollama server). Their tokens are
+  counted and their cost is $0.
+- Set `cost` when you know the real cost (for example from a gateway); it
+  replaces the price-table cost.
+- Pass `model` as the id from your config (e.g. `openai:gpt-4o-mini`) so it
+  matches the price table.
+- A system that wraps another reports only the calls its own code makes; the
+  wrapped system reports its own events.
+
+`UsageCounter` keeps the totals for you:
+
+| Method | Use it to |
+|--------|-----------|
+| `add_completion(response, model)` | Count a chat completion from an OpenAI-shaped response (any_llm, the OpenAI SDK) |
+| `add_embedding(response, model)` | Count an embedding request the same way |
+| `add(kind, model, input_tokens=..., output_tokens=..., local=..., cost=...)` | Count usage you measured yourself |
+| `totals()` | Return the running totals from `model_usage()` |
+
+MilaMem is the worked example. Every model call goes through
+`heams_memory_milamem/model_calls.py`, which wraps `any_llm` and adds each response
+to the counter of the operation in progress (bound by the `@model_calls.counted`
+decorator on `_retain_impl`, `_recall_impl`, `_delete_impl` and
+`_consolidate_impl`). Its call sites never mention usage, and
+`model_usage()` returns the counter's totals. Work it hands to its own
+threads runs in `contextvars.copy_context()` so it still reaches the counter.
+
 ## 4. Expose the plugin
 
 Create a factory and a `MemoryPlugin` descriptor in your package:

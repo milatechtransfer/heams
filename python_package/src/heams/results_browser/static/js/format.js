@@ -15,7 +15,11 @@ export function formatValue(value, unit) {
   if (unit === "%") return `${value.toFixed(1)}%`;
   if (unit === "s") return `${value.toFixed(2)} s`;
   if (unit === "tokens" || unit === "operations") return Math.round(value).toLocaleString("en-US");
-  if (unit === "USD") return `$${value.toFixed(4)}`;
+  if (unit === "USD") {
+    // Per-sample model costs are often well under a cent.
+    if (value !== 0 && Math.abs(value) < 0.01) return `$${value.toPrecision(2)}`;
+    return `$${value.toFixed(4)}`;
+  }
   if (Math.abs(value) >= 1000) return Math.round(value).toLocaleString("en-US");
   return Number.isInteger(value) ? String(value) : value.toFixed(3);
 }

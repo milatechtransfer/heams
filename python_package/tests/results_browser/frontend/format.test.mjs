@@ -15,6 +15,9 @@ test("values are formatted in their unit", () => {
   assert.equal(formatValue(1.5, "s"), "1.50 s");
   assert.equal(formatValue(1234567.4, "tokens"), "1,234,567");
   assert.equal(formatValue(null, "%"), "N/A");
+  assert.equal(formatValue(1.23456, "USD"), "$1.2346");
+  assert.equal(formatValue(0.000761, "USD"), "$0.00076");
+  assert.equal(formatValue(0, "USD"), "$0.0000");
   assert.equal(formatPercent(0.5), "50.0%");
   assert.equal(formatPercent(null), "–");
 });
