@@ -39,6 +39,34 @@ abstract: >-
   keeping, or failing to forget personal information). Agents, memory systems,
   and benchmarks are declared in YAML, and memory systems plug in as separate
   packages.
+preferred-citation:
+  type: article
+  title: "HEAMS: Holistic Evaluation of Agent Memory Systems"
+  authors:
+    - given-names: Chirag
+      family-names: Goel
+    - given-names: Jacob
+      family-names: Lavoie
+    - given-names: Amirhossein
+      family-names: Naghshzan
+    - given-names: Jordan
+      family-names: Bannister
+    - given-names: Marzia
+      family-names: Nouri
+    - given-names: Mehar
+      family-names: Bhatia
+    - given-names: Matt
+      family-names: Harris
+    - given-names: Siva
+      family-names: Reddy
+    - given-names: Arsène
+      family-names: Fansi Tchango
+    - given-names: Gaétan
+      family-names: Marceau Caron
+  journal: "arXiv preprint arXiv:2611.20144"
+  year: 2026
+  doi: 10.48550/arXiv.2611.20144
+  url: "https://arxiv.org/abs/2611.20144"
 keywords:
   - agent memory
   - memory systems

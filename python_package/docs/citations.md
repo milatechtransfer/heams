@@ -1,8 +1,10 @@
 # Citations & credits
 
 This framework builds on published benchmarks, datasets, and open-source
-libraries. If you use a benchmark through this framework, please cite the
-original work as well.
+libraries. If you use the framework, please cite the HEAMS paper (Goel et al.,
+2026, [arXiv:2611.20144](https://arxiv.org/abs/2611.20144); BibTeX
+`goel2026heams` below). If you use a benchmark through this framework, please
+cite the original work as well.
 
 ## Benchmarks and datasets
 
@@ -20,8 +22,8 @@ own license, listed below; check it before using a dataset commercially.
 | [Contextual Integrity](benchmarks/contextual_integrity.md) | Lan et al., 2025 ([arXiv:2506.04245](https://arxiv.org/abs/2506.04245)) | [`huseyinatahaninan/ContextualIntegritySyntheticDataset`](https://huggingface.co/datasets/huseyinatahaninan/ContextualIntegritySyntheticDataset) | Apache-2.0 |
 | [STALE](benchmarks/stale.md) | Chao et al., 2026 ([arXiv:2605.06527](https://arxiv.org/abs/2605.06527)) | [`STALEproj/STALE`](https://huggingface.co/datasets/STALEproj/STALE) (code: [`icedreamc/STALE`](https://github.com/icedreamc/STALE)) | CC BY 4.0 (code MIT) |
 | [Erasability & Editability](benchmarks/erasability_editability.md) | MEME (paper under review) | [`meme-benchmark/MEME`](https://huggingface.co/datasets/meme-benchmark/MEME) (code: [`SeokwonJung-Jay/MEME-public`](https://github.com/SeokwonJung-Jay/MEME-public)) | CC BY 4.0 (code MIT) |
-| [Transparency](benchmarks/transparency.md) | — <!-- Add the project whitepaper once it is published. --> | BEAM chats (above), or our own `datasets/transparency/` | BEAM: CC BY-SA 4.0; ours: CC BY 4.0 |
-| [Retention policy](benchmarks/retention_policy.md) | — <!-- Add the project whitepaper once it is published. --> | Our own `datasets/retention_policy/` | CC BY 4.0 |
+| [Transparency](benchmarks/transparency.md) | Goel et al., 2026 ([arXiv:2611.20144](https://arxiv.org/abs/2611.20144)) | BEAM chats (above), or our own `datasets/transparency/` | BEAM: CC BY-SA 4.0; ours: CC BY 4.0 |
+| [Retention policy](benchmarks/retention_policy.md) | Goel et al., 2026 ([arXiv:2611.20144](https://arxiv.org/abs/2611.20144)) | Our own `datasets/retention_policy/` | CC BY 4.0 |
 
 The Evo-Memory single-turn streams are built from:
 
@@ -108,6 +110,13 @@ The other fixtures are written by hand.
   title   = {{STALE}: Can {LLM} Agents Know When Their Memories Are No Longer Valid?},
   author  = {Chao, Hanxiang and Bai, Yihan and Sheng, Rui and Li, Tianle and Sun, Yushi},
   journal = {arXiv preprint arXiv:2605.06527},
+  year    = {2026}
+}
+
+@article{goel2026heams,
+  title   = {{HEAMS}: Holistic Evaluation of Agent Memory Systems},
+  author  = {Goel, Chirag and Lavoie, Jacob and Naghshzan, Amirhossein and Bannister, Jordan and Nouri, Marzia and Bhatia, Mehar and Harris, Matt and Reddy, Siva and Fansi Tchango, Ars{\`e}ne and Marceau Caron, Ga{\'e}tan},
+  journal = {arXiv preprint arXiv:2611.20144},
   year    = {2026}
 }
 

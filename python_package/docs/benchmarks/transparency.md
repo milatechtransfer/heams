@@ -141,5 +141,6 @@ BEAM-sourced samples come from BEAM (Tavakoli et al., 2025,
 [arXiv:2510.27246](https://arxiv.org/abs/2510.27246)), licensed **CC BY-SA 4.0**
 and downloaded on first use. `datasets/transparency/seed.json` is our own,
 released under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
-<!-- Cite the project whitepaper here once it is published. -->
-See [Citations & credits](../citations.md).
+The benchmark is introduced in the HEAMS paper (Goel et al., 2026,
+[arXiv:2611.20144](https://arxiv.org/abs/2611.20144)); please cite it if you
+use the benchmark. See [Citations & credits](../citations.md).

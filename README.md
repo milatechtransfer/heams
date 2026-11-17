@@ -85,10 +85,21 @@ Setup and usage are covered in the documentation:
 
 ## Citing
 
-A paper describing the framework is in preparation. Until it is published,
-please cite this repository if you use the framework in your research: use the
-"Cite this repository" button on GitHub, or the metadata in
-[`CITATION.cff`](CITATION.cff).
+The framework is described in our paper,
+[HEAMS: Holistic Evaluation of Agent Memory Systems](https://arxiv.org/abs/2611.20144).
+If you use the framework in your research, please cite it:
+
+```bibtex
+@article{goel2026heams,
+  title   = {{HEAMS}: Holistic Evaluation of Agent Memory Systems},
+  author  = {Goel, Chirag and Lavoie, Jacob and Naghshzan, Amirhossein and Bannister, Jordan and Nouri, Marzia and Bhatia, Mehar and Harris, Matt and Reddy, Siva and Fansi Tchango, Ars{\`e}ne and Marceau Caron, Ga{\'e}tan},
+  journal = {arXiv preprint arXiv:2611.20144},
+  year    = {2026}
+}
+```
+
+The "Cite this repository" button on GitHub and
+[`CITATION.cff`](CITATION.cff) give the same reference.
 
 Please also cite the original paper of each benchmark you report. Several
 benchmarks are adapted to this framework's shared setup, so report numbers as

@@ -158,8 +158,9 @@ The dataset in `datasets/retention_policy/` is our own: 96 authored sentences
 (8 per category) in `corpus.json`, expanded into the matrix by `matrix.py`.
 `generate.py` can add model-written sentences; see the dataset's README. The
 dataset is released under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
-<!-- Cite the project whitepaper here once it is published. -->
-See [Citations & credits](../citations.md).
+The benchmark is introduced in the HEAMS paper (Goel et al., 2026,
+[arXiv:2611.20144](https://arxiv.org/abs/2611.20144)); please cite it if you
+use the benchmark. See [Citations & credits](../citations.md).
 
 ## Related docs
 
