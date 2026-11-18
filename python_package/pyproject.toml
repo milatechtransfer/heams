@@ -2,6 +2,7 @@
 name = "heams"
 version = "1.0.0"
 license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
 requires-python = ">=3.12.6"
 description = "HEAMS: Holistic Evaluation of Agent Memory Systems."
 readme = "README.md"

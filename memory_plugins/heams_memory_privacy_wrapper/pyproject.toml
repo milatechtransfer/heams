@@ -1,7 +1,8 @@
 [project]
 name = "heams-memory-privacy-wrapper"
 version = "1.0.0"
-license = "MIT"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
 description = "Privacy wrapper for HEAMS: retention and recall policies around any memory system."
 requires-python = ">=3.12.6"
 dependencies = [
