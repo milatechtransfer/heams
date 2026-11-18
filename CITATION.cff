@@ -29,7 +29,7 @@ authors:
     affiliation: Mila – Quebec AI Institute
 version: 1.0.0
 date-released: 2026-10-16
-license: MIT
+license: Apache-2.0
 repository-code: "https://github.com/milatechtransfer/heams"
 url: "https://milatechtransfer.github.io/heams/"
 abstract: >-

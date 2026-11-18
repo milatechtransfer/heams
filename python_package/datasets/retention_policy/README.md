@@ -132,4 +132,4 @@ no benchmark changes needed, since the benchmark only reads the verdict.
 The data files (`corpus.json`, `policies.json`, `rules.json`, `dataset.json`)
 are released under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 The scripts that build them are part of the framework's code, under the
-repository's [MIT License](../../../LICENSE).
+repository's [Apache License 2.0](../../../LICENSE).

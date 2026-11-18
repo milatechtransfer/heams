@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- The code is now released under the Apache License 2.0 (previously MIT); the
+  datasets created for this project remain under CC BY 4.0.
+
 ## 1.0.0 (2026-10-16)
 
 First public release of HEAMS: Holistic Evaluation of Agent Memory Systems, an

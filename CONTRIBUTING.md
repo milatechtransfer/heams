@@ -55,7 +55,7 @@ make setup-pre-commit
 ## License
 
 By contributing, you agree that your contributions are released under the
-project's MIT License (and, for datasets, under CC BY 4.0), as described in the
+project's Apache License 2.0 (and, for datasets, under CC BY 4.0), as described in the
 [README](README.md#license).
 
 ## Research collaborations

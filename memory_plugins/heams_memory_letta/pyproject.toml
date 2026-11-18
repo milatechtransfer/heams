@@ -1,7 +1,7 @@
 [project]
 name = "heams-memory-letta"
 version = "1.0.0"
-license = "MIT"
+license = "Apache-2.0"
 description = "Letta (MemGPT) memory plugin for HEAMS."
 requires-python = ">=3.12.6,<3.14"
 dependencies = [
