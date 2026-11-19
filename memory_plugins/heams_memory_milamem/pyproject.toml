@@ -1,7 +1,8 @@
 [project]
 name = "heams-memory-milamem"
 version = "1.0.0"
-license = "MIT"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
 description = "MilaMem memory plugin for HEAMS."
 requires-python = ">=3.12.6"
 dependencies = [

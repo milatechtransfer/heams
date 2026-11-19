@@ -1,7 +1,8 @@
 [project]
 name = "heams-memory-mem0"
 version = "1.0.0"
-license = "MIT"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
 description = "Mem0 memory plugin for HEAMS."
 requires-python = ">=3.12.6"
 dependencies = [

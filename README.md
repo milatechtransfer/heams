@@ -3,7 +3,7 @@
 [![Tests](https://github.com/milatechtransfer/heams/actions/workflows/test.yml/badge.svg)](https://github.com/milatechtransfer/heams/actions/workflows/test.yml)
 [![Check](https://github.com/milatechtransfer/heams/actions/workflows/check.yml/badge.svg)](https://github.com/milatechtransfer/heams/actions/workflows/check.yml)
 [![Docs](https://github.com/milatechtransfer/heams/actions/workflows/docs.yml/badge.svg)](https://milatechtransfer.github.io/heams/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 <p align="center">
   <a href="python_package/docs/assets/teaser.pdf">
@@ -109,7 +109,7 @@ every benchmark, dataset, and library used, with its paper, license, and BibTeX.
 
 ## License
 
-This repository is released under the [MIT License](LICENSE), with two
+This repository is released under the [Apache License 2.0](LICENSE), with two
 exceptions. The datasets created for this project
 (`python_package/datasets/retention_policy/` and
 `python_package/datasets/transparency/seed.json`) are released under
