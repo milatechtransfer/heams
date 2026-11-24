@@ -1,6 +1,8 @@
 # Dependabot security updates are enabled in the repository settings.
-# This file groups them into a single PR across all four lockfiles instead of
-# one PR per package, so shared fixes land together and are tested once.
+# This file groups them into a single PR across every lockfile listed below
+# instead of one PR per package, so shared fixes land together and are tested
+# once. A directory with a uv.lock that is missing here gets ungrouped PRs, so
+# add new memory plugins to the list.
 #
 # open-pull-requests-limit: 0 turns off routine version updates, so PRs are
 # only opened for security advisories.
@@ -12,6 +14,7 @@ updates:
       - "/memory_plugins/heams_memory_letta"
       - "/memory_plugins/heams_memory_mem0"
       - "/memory_plugins/heams_memory_milamem"
+      - "/memory_plugins/heams_memory_privacy_wrapper"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 0
