@@ -114,7 +114,9 @@ Open an issue first for either one (see [Where a change goes](#where-a-change-go
    ```
 
    If you change a memory plugin or a model provider, also run `make test`,
-   which includes the integration and Ollama tests.
+   which adds the integration and Ollama tests. The Ollama tests need a local
+   Ollama server with `qwen2.5:7b` pulled, and skip themselves when no server
+   is running.
 
 6. In the pull request, describe what changed and why, say how you checked it
    (which tests, which run config, which model), and link the issue it
