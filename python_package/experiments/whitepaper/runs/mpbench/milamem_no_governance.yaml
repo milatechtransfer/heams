@@ -1,0 +1,6 @@
+run_name: mpbench_milamem_no_governance
+experiments:
+- name: mpbench_milamem_no_governance
+  agent_config_file: mpbench.yaml
+  benchmark_config_file: mpbench.yaml
+  memory_system_config_file: milamem.yaml

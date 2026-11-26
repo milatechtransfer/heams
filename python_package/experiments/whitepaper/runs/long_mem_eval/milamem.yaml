@@ -1,0 +1,6 @@
+run_name: long_mem_eval_milamem
+experiments:
+- name: long_mem_eval_milamem
+  agent_config_file: deterministic_recall.yaml
+  benchmark_config_file: long_mem_eval.yaml
+  memory_system_config_file: milamem.yaml

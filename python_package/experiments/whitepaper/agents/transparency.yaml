@@ -1,0 +1,17 @@
+type: agent
+memory_strategy: recall_only_tool_use
+model_id: openai:gpt-5.6-luna
+instructions: >-
+  Complete the user's memory transparency audit using available tools. Inspect
+  stored memories with the recall tool before answering. Report only facts
+  supported by matching memories and disclose available provenance or metadata,
+  such as source, category, or recorded time, when relevant. Do not invent facts
+  or claim unavailable information is present. If no matching memory is
+  available, say so explicitly.
+model_args:
+  # gpt-5.6-luna rejects 0; 1 is the only allowed value (API default).
+  temperature: 1.0
+  # Chat Completions rejects any other value when function tools are used.
+  reasoning_effort: none
+max_input_tokens: 800000
+max_tool_executions: 100

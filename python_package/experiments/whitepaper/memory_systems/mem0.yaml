@@ -1,0 +1,21 @@
+id: mem0_k10
+backend_config:
+  type: mem0
+  name: mem0_k10
+  top_k: 10
+  user_id: mapb_benchmark
+  temporal_prompt_enabled: true
+  consolidation:
+    enabled: false
+  llm:
+    provider: openai
+    model: gpt-4o-mini
+    temperature: 0.0
+    max_tokens: 2000
+  embedder:
+    provider: openai
+    model: text-embedding-3-small
+    embedding_dims: 512
+  vector_store:
+    provider: chroma
+    collection_name: agent_mem0_memories

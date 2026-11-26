@@ -1,0 +1,6 @@
+run_name: beam_500k_letta
+experiments:
+- name: beam_500k_letta
+  agent_config_file: deterministic_recall.yaml
+  benchmark_config_file: beam_500k.yaml
+  memory_system_config_file: letta.yaml

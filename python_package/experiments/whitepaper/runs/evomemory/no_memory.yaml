@@ -1,0 +1,6 @@
+run_name: evomemory_no_memory
+experiments:
+- name: evomemory_no_memory
+  agent_config_file: evomemory.yaml
+  benchmark_config_file: evomemory.yaml
+  memory_system_config_file: no_memory.yaml

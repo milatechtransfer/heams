@@ -1,0 +1,6 @@
+run_name: locomo_letta
+experiments:
+- name: locomo_letta
+  agent_config_file: deterministic_recall.yaml
+  benchmark_config_file: locomo.yaml
+  memory_system_config_file: letta.yaml

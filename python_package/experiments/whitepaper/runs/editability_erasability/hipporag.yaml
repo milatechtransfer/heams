@@ -1,0 +1,6 @@
+run_name: editability_erasability_hipporag
+experiments:
+- name: editability_erasability_hipporag
+  agent_config_file: editability_erasability.yaml
+  benchmark_config_file: editability_erasability.yaml
+  memory_system_config_file: hipporag.yaml

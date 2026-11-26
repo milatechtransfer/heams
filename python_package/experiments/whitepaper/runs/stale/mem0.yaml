@@ -1,0 +1,6 @@
+run_name: stale_mem0
+experiments:
+- name: stale_mem0
+  agent_config_file: stale.yaml
+  benchmark_config_file: stale.yaml
+  memory_system_config_file: mem0.yaml

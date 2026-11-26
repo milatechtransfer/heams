@@ -1,0 +1,6 @@
+run_name: evomemory_hipporag
+experiments:
+- name: evomemory_hipporag
+  agent_config_file: evomemory.yaml
+  benchmark_config_file: evomemory.yaml
+  memory_system_config_file: evomemory/hipporag.yaml

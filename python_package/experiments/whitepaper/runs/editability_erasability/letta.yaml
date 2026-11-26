@@ -1,0 +1,6 @@
+run_name: editability_erasability_letta
+experiments:
+- name: editability_erasability_letta
+  agent_config_file: editability_erasability.yaml
+  benchmark_config_file: editability_erasability.yaml
+  memory_system_config_file: letta.yaml

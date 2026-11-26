@@ -1,0 +1,6 @@
+run_name: transparency_hipporag
+experiments:
+- name: transparency_hipporag
+  agent_config_file: transparency.yaml
+  benchmark_config_file: transparency.yaml
+  memory_system_config_file: hipporag.yaml

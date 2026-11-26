@@ -1,0 +1,6 @@
+run_name: beam_100k_in_context
+experiments:
+- name: beam_100k_in_context
+  agent_config_file: deterministic_recall.yaml
+  benchmark_config_file: beam_100k.yaml
+  memory_system_config_file: in_context.yaml

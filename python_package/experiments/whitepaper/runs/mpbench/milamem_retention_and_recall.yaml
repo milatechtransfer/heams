@@ -1,0 +1,6 @@
+run_name: mpbench_milamem_retention_and_recall
+experiments:
+- name: mpbench_milamem_retention_and_recall
+  agent_config_file: mpbench.yaml
+  benchmark_config_file: mpbench.yaml
+  memory_system_config_file: mpbench/milamem_retention_and_recall.yaml

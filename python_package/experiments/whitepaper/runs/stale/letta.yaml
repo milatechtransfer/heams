@@ -1,0 +1,6 @@
+run_name: stale_letta
+experiments:
+- name: stale_letta
+  agent_config_file: stale.yaml
+  benchmark_config_file: stale.yaml
+  memory_system_config_file: letta.yaml

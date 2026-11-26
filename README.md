@@ -83,6 +83,29 @@ Setup and usage are covered in the documentation:
   [Adding a benchmark](python_package/docs/adding-benchmark.md): extending the
   framework
 
+## White paper experiments
+
+The [white paper configs](python_package/experiments/whitepaper/) contain the
+67 run configurations behind the results reported in the paper. They are
+organized by benchmark under `runs/` and kept separate from the default
+configs. The bundle contains YAML only, not datasets or results.
+
+The experiment agents used a sampling temperature of `1.0`, so reruns with the
+same configs can produce different responses and may not match the reported scores exactly.
+
+After setup, select the white paper config root with `CONFIG_DIR`. For example:
+
+```sh
+cd python_package
+CONFIG_DIR="$PWD/experiments/whitepaper" uv run --no-sync heams run \
+  --config experiments/whitepaper/runs/locomo/no_memory.yaml \
+  --output-dir results/whitepaper-locomo-no-memory
+```
+
+See the [benchmark documentation](python_package/docs/index.md#benchmarks) for
+dataset access requirements. Evo-Memory also loads MMLU-Pro, which was excluded
+from the paper's cross-system comparison.
+
 ## Citing
 
 The framework is described in our paper,

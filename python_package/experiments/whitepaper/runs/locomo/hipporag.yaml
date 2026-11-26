@@ -1,0 +1,6 @@
+run_name: locomo_hipporag
+experiments:
+- name: locomo_hipporag
+  agent_config_file: deterministic_recall.yaml
+  benchmark_config_file: locomo.yaml
+  memory_system_config_file: hipporag.yaml

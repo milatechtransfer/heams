@@ -1,0 +1,6 @@
+run_name: locomo_no_memory
+experiments:
+- name: locomo_no_memory
+  agent_config_file: deterministic_recall.yaml
+  benchmark_config_file: locomo.yaml
+  memory_system_config_file: no_memory.yaml

@@ -1,0 +1,6 @@
+run_name: retention_policy_milamem_without_retention
+experiments:
+- name: retention_policy_milamem_without_retention
+  agent_config_file: deterministic_recall.yaml
+  benchmark_config_file: retention_policy.yaml
+  memory_system_config_file: retention_policy/milamem_without_retention.yaml

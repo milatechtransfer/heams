@@ -1,0 +1,6 @@
+run_name: stale_hipporag
+experiments:
+- name: stale_hipporag
+  agent_config_file: stale.yaml
+  benchmark_config_file: stale.yaml
+  memory_system_config_file: hipporag.yaml

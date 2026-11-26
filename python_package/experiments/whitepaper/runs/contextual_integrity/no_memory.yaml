@@ -1,0 +1,6 @@
+run_name: contextual_integrity_no_memory
+experiments:
+- name: contextual_integrity_no_memory
+  agent_config_file: contextual_integrity.yaml
+  benchmark_config_file: contextual_integrity.yaml
+  memory_system_config_file: no_memory.yaml
