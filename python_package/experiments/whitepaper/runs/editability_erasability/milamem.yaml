@@ -1,0 +1,6 @@
+run_name: editability_erasability_milamem
+experiments:
+- name: editability_erasability_milamem
+  agent_config_file: editability_erasability.yaml
+  benchmark_config_file: editability_erasability.yaml
+  memory_system_config_file: milamem.yaml

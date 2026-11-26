@@ -1,0 +1,6 @@
+run_name: transparency_milamem
+experiments:
+- name: transparency_milamem
+  agent_config_file: transparency.yaml
+  benchmark_config_file: transparency.yaml
+  memory_system_config_file: milamem.yaml

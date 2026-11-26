@@ -1,0 +1,12 @@
+type: long_mem_eval
+# examples_dir defaults to python_package/datasets/long_mem_eval
+# limit: null
+# Deterministic recall queries with the full prompt, so it carries only the
+# question; answering guidance lives in the agent instructions.
+answer_prompt: |-
+  Current Date: {question_date}
+  Question: {question}
+evaluator:
+  type: long_mem_eval_llm_judge
+  judge_model_id: openai:gpt-4o-mini
+  success_threshold: 1.0

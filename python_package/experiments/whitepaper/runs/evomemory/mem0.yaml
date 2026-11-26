@@ -1,0 +1,6 @@
+run_name: evomemory_mem0
+experiments:
+- name: evomemory_mem0
+  agent_config_file: evomemory.yaml
+  benchmark_config_file: evomemory.yaml
+  memory_system_config_file: evomemory/mem0.yaml

@@ -1,0 +1,14 @@
+id: hipporag_openai_k10
+backend_config:
+  type: hipporag
+  name: hipporag_openai_k10
+  top_k: 10
+  consolidation:
+    enabled: false
+  global_config:
+    llm_name: gpt-4o-mini
+    embedding_model_name: text-embedding-3-small
+    openie_mode: online
+    response_format:
+      type: json_object
+    temperature: 0.0

@@ -1,0 +1,6 @@
+run_name: evomemory_milamem
+experiments:
+- name: evomemory_milamem
+  agent_config_file: evomemory.yaml
+  benchmark_config_file: evomemory.yaml
+  memory_system_config_file: evomemory/milamem.yaml

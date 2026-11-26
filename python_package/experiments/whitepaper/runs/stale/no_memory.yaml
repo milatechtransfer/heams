@@ -1,0 +1,6 @@
+run_name: stale_no_memory
+experiments:
+- name: stale_no_memory
+  agent_config_file: stale.yaml
+  benchmark_config_file: stale.yaml
+  memory_system_config_file: no_memory.yaml

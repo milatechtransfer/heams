@@ -1,0 +1,6 @@
+run_name: evomemory_letta
+experiments:
+- name: evomemory_letta
+  agent_config_file: evomemory.yaml
+  benchmark_config_file: evomemory.yaml
+  memory_system_config_file: evomemory/letta.yaml

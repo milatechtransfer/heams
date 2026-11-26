@@ -1,0 +1,7 @@
+id: in_context
+backend_config:
+  type: in_context
+  name: in_context
+  top_k: 5
+  max_approx_recall_tokens: 120000
+  approx_chars_per_token: 4

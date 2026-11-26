@@ -1,0 +1,6 @@
+run_name: evomemory_in_context
+experiments:
+- name: evomemory_in_context
+  agent_config_file: evomemory.yaml
+  benchmark_config_file: evomemory.yaml
+  memory_system_config_file: evomemory/in_context.yaml

@@ -1,0 +1,25 @@
+id: letta_openai
+backend_config:
+  type: letta
+  name: letta_openai
+  # Recall returns core memory plus up to this many passages from the agent's own
+  # archival search; the agent chooses its search size, so fewer can come back.
+  top_k: 5
+  # The MemGPT agent's model; it also writes Letta's summaries when the window fills.
+  # gpt-4o-mini, not the benchmark agent's model: Letta 0.16.8 lets a request start
+  # with any of several tools only for gpt-4o/gpt-4o-mini (STRUCTURED_OUTPUT_MODELS),
+  # and without that choice the agent never edits core memory, where updates happen.
+  model: openai/gpt-4o-mini
+  embedding: openai/text-embedding-3-small
+  # Letta's default; at 0.0 the agent's inner monologue can loop until the tool call is cut off.
+  temperature: 0.7
+  # Each priming or retain request must start with one of these; the agent picks which,
+  # so a fact can be updated in core memory rather than only appended to archival.
+  write_tools: [core_memory_append, core_memory_replace, archival_memory_insert]
+  # Each recall request must start with this search; the agent writes the query.
+  search_tool: archival_memory_search
+  # The MemGPT paper's core block size; Letta summarises the window when it fills.
+  block_limit: 2000
+  context_window: 16000
+  # Postgres with pgvector and Letta 0.16.8's schema; see the plugin README.
+  pg_uri_env: LETTA_PG_URI

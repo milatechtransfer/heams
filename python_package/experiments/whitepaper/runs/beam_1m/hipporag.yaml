@@ -1,0 +1,6 @@
+run_name: beam_1m_hipporag
+experiments:
+- name: beam_1m_hipporag
+  agent_config_file: deterministic_recall.yaml
+  benchmark_config_file: beam_1m.yaml
+  memory_system_config_file: hipporag.yaml

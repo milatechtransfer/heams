@@ -1,0 +1,6 @@
+run_name: transparency_letta
+experiments:
+- name: transparency_letta
+  agent_config_file: transparency.yaml
+  benchmark_config_file: transparency.yaml
+  memory_system_config_file: letta.yaml

@@ -1,0 +1,22 @@
+# Retention Policy benchmark: scores the governance layer in front of memory.
+#
+# One sample per prohibition-only policy ("Do not retain X"). Each sample sets
+# its policy on the memory system (set_retention_policy), retains every chunk,
+# then recall-probes each one: a prohibited chunk must be blocked and absent, a
+# permitted one stored and recallable. One memory-system config with
+# `retention.policy_rules` for every policy serves all samples.
+type: retention_policy
+
+# Flat list of rows: id, policy_id, policy, text, category, expected.
+# Regenerate with datasets/retention_policy/matrix.py.
+dataset_path: datasets/retention_policy/dataset.json
+
+# Run every policy in the dataset.
+policy_ids: null
+
+# Cap the number of policy samples after filtering; null runs all.
+limit: null
+
+evaluator:
+  # Retained-and-recallable vs blocked-and-absent, per chunk.
+  type: retention_policy

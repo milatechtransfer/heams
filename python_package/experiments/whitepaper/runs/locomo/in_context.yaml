@@ -1,0 +1,6 @@
+run_name: locomo_in_context
+experiments:
+- name: locomo_in_context
+  agent_config_file: deterministic_recall.yaml
+  benchmark_config_file: locomo.yaml
+  memory_system_config_file: in_context.yaml
